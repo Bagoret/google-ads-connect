@@ -55,5 +55,7 @@ constraints, promotions), `knowledge/shopping-principles.md`, `context/account-m
 - `review.md` — source, currency, grain, table (`item_id, title, brand, cost, clicks, conversions,
   conversion_value, revenue_roas, cpa` [+ `margin_rate, estimated_margin, margin_after_ad_cost, stock_status`
   when supplied]), join check, validation log.
+- `dashboard.html` — offline visual page: KPI tiles, cost by brand (top 7 + Other), products with No conversions /
+  stock badges, margin after ad cost only when supplied, join check.
 - `products.json` — same rows plus `unmatched`, `margin_definition`, `log`.
 - Any proposed actions use the 11-column action register.

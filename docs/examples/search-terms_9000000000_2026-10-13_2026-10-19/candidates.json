@@ -1,0 +1,77 @@
+{
+  "source": "synthetic_search_terms.json",
+  "date_range": [
+    "2026-10-13",
+    "2026-10-19"
+  ],
+  "synthetic": true,
+  "currency": "EUR",
+  "caveats": [
+    "conversion delay unknown (context/measurement.md): recent conversions and conversion value may still increase"
+  ],
+  "coverage_note": "The search-terms data does not include every search query: Google withholds low-volume and privacy-thresholded queries, and Performance Max terms are not in this report.",
+  "terms": [
+    {
+      "campaign_id": "9000000002",
+      "search_term": "synthbrand serum",
+      "brand_class": "stocked",
+      "clicks": 40,
+      "cost": "20",
+      "conversions": "2.5",
+      "weak_performance": "",
+      "intent_review": "PENDING"
+    },
+    {
+      "campaign_id": "9000000002",
+      "search_term": "synthbrand sérum avis",
+      "brand_class": "stocked",
+      "clicks": 35,
+      "cost": "18",
+      "conversions": "0.0",
+      "weak_performance": "0 conversions on 35 clicks (≥ 30)",
+      "intent_review": "PENDING"
+    },
+    {
+      "campaign_id": "9000000002",
+      "search_term": "synthshop crème",
+      "brand_class": "marketplace",
+      "clicks": 10,
+      "cost": "3",
+      "conversions": "1.0",
+      "weak_performance": "",
+      "intent_review": "PENDING"
+    },
+    {
+      "campaign_id": "9000000002",
+      "search_term": "free serum sample",
+      "brand_class": "generic_or_unknown",
+      "clicks": 3,
+      "cost": "1.5",
+      "conversions": "0.0",
+      "weak_performance": "",
+      "intent_review": "PENDING"
+    }
+  ],
+  "conflicts": [
+    {
+      "negative_text": "serum",
+      "negative_match_type": "PHRASE",
+      "negative_level": "campaign",
+      "negative_criterion_id": "6000000001",
+      "shared_set_id": "",
+      "keyword_text": "synthbrand serum",
+      "keyword_match_type": "PHRASE",
+      "keyword_criterion_id": "7000000001",
+      "campaign_id": "9000000002",
+      "ad_group_id": "8000000001"
+    }
+  ],
+  "log": {
+    "assumptions": [],
+    "warnings": [
+      "shared negative keyword lists not supplied: conflict check covers campaign-level negatives only"
+    ],
+    "excluded": [],
+    "errors": []
+  }
+}

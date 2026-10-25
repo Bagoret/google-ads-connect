@@ -13,8 +13,8 @@ and tested on synthetic data. **No ad account is connected yet.**
 |---|---|---|---|
 | Fill business context, check readiness | `onboarding` | `scripts/context_status.py` | `outputs/onboarding/data-readiness.md` |
 | Weekly performance review | `weekly-review` | `scripts/weekly_review.py` | report + action register |
-| Search-term review | `search-term-review` | `scripts/search_terms.py` | review + negative candidates + conflicts |
-| Product review | `product-review` | `scripts/product_review.py` | item table + join check |
+| Search-term review | `search-term-review` | `scripts/search_terms.py` | review + negative candidates + conflicts + `dashboard.html` |
+| Product review | `product-review` | `scripts/product_review.py` | item table + join check + `dashboard.html` |
 | Visual dashboard | `weekly-review` | `scripts/dashboard.py` | `outputs/dashboard_*/index.html`: one offline HTML file (KPIs, daily trends, segment mix, issues, campaigns) |
 | Check the OAuth/MCP connection | `onboarding` | `scripts/check_connection.py` | pass/fail checklist (no secrets printed) |
 | Fetch data (read-only) | all | `scripts/snapshot.py`, `scripts/inspect_snapshot.py` | `data/raw/*.json` |
@@ -110,6 +110,6 @@ writing is disabled. See [`docs/write-path.md`](docs/write-path.md).
 
 ## Roadmap
 1. **Connect** — run onboarding on your machine and pass the contract gate.
-2. **Visual layer** — done for the weekly view (`scripts/dashboard.py`); next: search-term and product views, change-request status.
+2. **Visual layer** — done: weekly dashboard (`scripts/dashboard.py`) and `dashboard.html` pages from the search-term and product reviews; next: change-request status.
 3. **Deeper analyses** — budget pacing, impression-share loss, PMax channels and assets, conversion audit, anomaly detection.
 4. **Approved actions** — enable an executor for a short list of low-risk operations, one approved change at a time.
