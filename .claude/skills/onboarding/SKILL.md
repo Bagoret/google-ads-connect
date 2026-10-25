@@ -28,7 +28,8 @@ None to start. The skill discovers what is missing.
 
 ## Procedure
 1. Run `python3 scripts/context_status.py`. Read `outputs/onboarding/data-readiness.md`.
-2. Check MCP readiness:
+2. Check MCP readiness: run `python3 scripts/check_connection.py` (add `--live --customer-id <ID>` once
+   configured). Relay FAIL/WARN lines and their fixes; it never prints secrets.
    - `.mcp.json` missing → point the user to `docs/mcp-setup.md` (they do it on their machine), stop the MCP part.
    - Present → call `list_accessible_customers`; confirm with the user which customer ID is in scope.
 3. Pull facts the account can answer itself (read-only), instead of asking:
