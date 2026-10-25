@@ -1,0 +1,77 @@
+{
+  "source": "synthetic_product_daily.json",
+  "date_range": [
+    "2026-10-13",
+    "2026-10-14"
+  ],
+  "currency": "EUR",
+  "synthetic": true,
+  "grain": "item_id × period",
+  "caveats": [
+    "conversion delay unknown (context/measurement.md): recent conversions and conversion value may still increase"
+  ],
+  "margin_definition": "SYNTHETIC gross margin excl. VAT as a share of conversion value",
+  "products": [
+    {
+      "item_id": "synth-sku-001",
+      "title": "SYNTH product SYNTH-SKU-001",
+      "brand": "SynthBrand",
+      "cost": "16.00",
+      "clicks": 40,
+      "conversions": "2.00",
+      "conversion_value": "80.00",
+      "revenue_roas": "5.00",
+      "cpa": "8.00",
+      "margin_rate": "0.40",
+      "estimated_margin": "32.00",
+      "margin_after_ad_cost": "16.00",
+      "stock_status": "in_stock"
+    },
+    {
+      "item_id": "synth-sku-002",
+      "title": "SYNTH product SYNTH-SKU-002",
+      "brand": "SynthBrand",
+      "cost": "10.00",
+      "clicks": 20,
+      "conversions": "1.00",
+      "conversion_value": "20.00",
+      "revenue_roas": "2.00",
+      "cpa": "10.00",
+      "margin_rate": "0.10",
+      "estimated_margin": "2.00",
+      "margin_after_ad_cost": "-8.00",
+      "stock_status": "low_stock"
+    },
+    {
+      "item_id": "synth-sku-003",
+      "title": "SYNTH product SYNTH-SKU-003",
+      "brand": "OtherSynth",
+      "cost": "4.00",
+      "clicks": 10,
+      "conversions": "0.00",
+      "conversion_value": "0.00",
+      "revenue_roas": "0.00",
+      "cpa": "N/A"
+    }
+  ],
+  "unmatched": {
+    "only_in_performance": [
+      "synth-sku-003"
+    ],
+    "only_in_supplement": [
+      "synth-sku-999"
+    ]
+  },
+  "log": {
+    "assumptions": [
+      "grain aggregated from item_id × campaign_id × date to item_id × period (all campaigns in this shopping_performance_view snapshot)",
+      "item IDs normalised with strip + casefold on both sides before joining"
+    ],
+    "warnings": [
+      "1 item(s) with performance but no supplement row",
+      "1 supplement item(s) with no performance in this period"
+    ],
+    "excluded": [],
+    "errors": []
+  }
+}

@@ -64,6 +64,8 @@ and propose negative-keyword **candidates**, checked against existing exclusions
 `outputs/search-terms_<customer>_<start>_<end>/`:
 - `review.md` (script) + your intent review appended under `## Intent review` with
   `| term | campaign | decision | reason | evidence source | Observed/Hypothesis |`.
+- `dashboard.html` (script): offline visual page — KPI tiles, cost by brand class, conflicts, terms by cost
+  with weak-performance and pending-intent badges. Point the user to it; do not restate its numbers by hand.
 - `candidates.json` (script): `terms[]` (campaign_id, search_term, brand_class, clicks, cost,
   conversions, weak_performance, intent_review), `conflicts[]`, `coverage_note`, `log`.
 - Negative candidates go in an action register (same 11 columns as the weekly review, approval_required = yes).
