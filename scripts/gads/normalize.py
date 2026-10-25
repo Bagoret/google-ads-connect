@@ -156,3 +156,23 @@ GRAIN_DIMENSIONS = [
 def detect_grain(records: list[dict]) -> list[str]:
     present = {k for r in records for k in r}
     return [d for d in GRAIN_DIMENSIONS if d in present]
+
+
+def records_from_snapshot(path: Path, required: set[str], log: RunLog,
+                          expected_query: str | None = None) -> tuple[Snapshot, list[dict]]:
+    """Load a snapshot and return its typed records (shared by all review scripts)."""
+    snap = load_snapshot(path)
+    if expected_query and snap.query_name != expected_query:
+        raise StopAnalysis(f"{Path(path).name} is a {snap.query_name} snapshot; expected {expected_query}")
+    rows = [flatten_row(r) for r in extract_rows(snap.payload, log)]
+    return snap, apply_field_map(rows, load_field_map(), required, log)
+
+
+def unique_dir(root: Path, slug: str) -> Path:
+    """Create and return root/slug, adding -2, -3 … if it already exists (never overwrite outputs)."""
+    root.mkdir(parents=True, exist_ok=True)
+    out, n = root / slug, 2
+    while out.exists():
+        out, n = root / f"{slug}-{n}", n + 1
+    out.mkdir()
+    return out

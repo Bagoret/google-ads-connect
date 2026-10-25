@@ -1,0 +1,15 @@
+{
+ "_synthetic": "SYNTHETIC TEST DATA - NOT REAL",
+ "query_name": "search_terms",
+ "gaql": "SELECT ... (search_terms)",
+ "customer_id": "9000000000",
+ "start": "2026-10-13",
+ "end": "2026-10-19",
+ "fetched_at": "2026-10-25T09:00:00+00:00",
+ "server_info": {
+  "name": "fake-google-ads-mcp"
+ },
+ "tool_name": "search",
+ "payload_kind": "json_text",
+ "payload_text": "[{\"campaign.id\": \"9000000002\", \"campaign.name\": \"SYNTH_Search_B\", \"ad_group.id\": \"8000000001\", \"search_term_view.search_term\": \"synthbrand serum\", \"search_term_view.status\": \"NONE\", \"segments.keyword.info.text\": \"synthbrand serum\", \"segments.keyword.info.match_type\": \"PHRASE\", \"metrics.impressions\": \"100\", \"metrics.clicks\": \"40\", \"metrics.cost_micros\": \"20000000\", \"metrics.conversions\": 2.5, \"metrics.conversions_value\": 50.0}, {\"campaign.id\": \"9000000002\", \"campaign.name\": \"SYNTH_Search_B\", \"ad_group.id\": \"8000000001\", \"search_term_view.search_term\": \"synthbrand s\\u00e9rum avis\", \"search_term_view.status\": \"NONE\", \"segments.keyword.info.text\": \"synthbrand serum\", \"segments.keyword.info.match_type\": \"PHRASE\", \"metrics.impressions\": \"100\", \"metrics.clicks\": \"35\", \"metrics.cost_micros\": \"18000000\", \"metrics.conversions\": 0.0, \"metrics.conversions_value\": 0.0}, {\"campaign.id\": \"9000000002\", \"campaign.name\": \"SYNTH_Search_B\", \"ad_group.id\": \"8000000001\", \"search_term_view.search_term\": \"synthshop cr\\u00e8me\", \"search_term_view.status\": \"NONE\", \"segments.keyword.info.text\": \"synthshop\", \"segments.keyword.info.match_type\": \"EXACT\", \"metrics.impressions\": \"100\", \"metrics.clicks\": \"10\", \"metrics.cost_micros\": \"3000000\", \"metrics.conversions\": 1.0, \"metrics.conversions_value\": 20.0}, {\"campaign.id\": \"9000000002\", \"campaign.name\": \"SYNTH_Search_B\", \"ad_group.id\": \"8000000001\", \"search_term_view.search_term\": \"free serum sample\", \"search_term_view.status\": \"NONE\", \"segments.keyword.info.text\": \"synthbrand serum\", \"segments.keyword.info.match_type\": \"PHRASE\", \"metrics.impressions\": \"100\", \"metrics.clicks\": \"3\", \"metrics.cost_micros\": \"1500000\", \"metrics.conversions\": 0.0, \"metrics.conversions_value\": 0.0}]"
+}
