@@ -71,19 +71,19 @@ class InitWorkspaceTest(unittest.TestCase):
 class ProfileTest(unittest.TestCase):
     def test_invalid_values_rejected(self):
         with fresh_root() as tmp:
-            for bad in ({"relationship": "boss"}, {"access": "superuser"}, {"language": "de"}, {"uses": ["hacking"]}):
-                args = {"relationship": "agency", "access": "read_only", "language": "fr", "uses": ["weekly-review"], **bad}
+            for bad in ({"relationship": "boss"}, {"access": "superuser"}, {"uses": ["hacking"]}):
+                args = {"relationship": "agency", "access": "read_only", "uses": ["weekly-review"], **bad}
                 with self.assertRaises(ValueError):
                     save_profile(Path(tmp), **args)
 
     def test_profile_saved_privately_and_minimal(self):
         with fresh_root() as tmp:
-            path = save_profile(Path(tmp), relationship="freelancer", access="read_only", language="fr",
+            path = save_profile(Path(tmp), relationship="freelancer", access="read_only",
                                 uses=["weekly-review", "search-term-review"], display_name="Sam")
             data = load_profile(Path(tmp))
             self.assertEqual(data["relationship"], "freelancer")
-            self.assertEqual(data["language"], "fr")
-            self.assertEqual(set(data), {"display_name", "relationship", "access", "language", "uses",
+            self.assertNotIn("language", data)  # reports and replies are English only
+            self.assertEqual(set(data), {"display_name", "relationship", "access", "uses",
                                          "first_run_completed_at"})
             if os.name != "nt":
                 self.assertEqual(path.stat().st_mode & 0o077, 0)
@@ -121,6 +121,11 @@ class StatusAndHookTest(unittest.TestCase):
         msg = hook_message(st)
         self.assertIn("3", msg)
         self.assertNotIn("person setup", msg)
+
+    def test_cli_has_no_language_option(self):
+        r = subprocess.run([sys.executable, str(ROOT / "scripts" / "first_run.py"), "save", "--help"],
+                           capture_output=True, text=True)
+        self.assertNotIn("--language", r.stdout)
 
     def test_session_start_hook_configured(self):
         settings = json.loads((ROOT / ".claude" / "settings.json").read_text())
