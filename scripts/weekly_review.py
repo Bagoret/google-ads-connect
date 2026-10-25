@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
 
@@ -61,7 +62,18 @@ def _segment(periods: dict[str, list[dict]], meta: dict, field: str) -> dict[str
     return out
 
 
-def run_review(args: argparse.Namespace) -> Path:
+@dataclass
+class Review:
+    """Everything a weekly review computes; shared by the report and the dashboard."""
+    ctx: ReviewContext
+    actions: list
+    log: RunLog
+    data: ReportData
+    records: list[dict]
+    periods: dict[str, list[dict]]
+
+
+def build_review(args: argparse.Namespace) -> Review:
     log = RunLog()
     snap = load_snapshot(args.snapshot)
     if snap.query_name != "campaign_daily":
@@ -124,9 +136,14 @@ def run_review(args: argparse.Namespace) -> Path:
                       by_type=_segment(periods, meta, "campaign_type"),
                       by_brand=_segment(periods, meta, "brand_category"),
                       equivalence_reasons=reasons, parameters=parameters)
-    report = render_report(ctx, actions, log, data)
-    slug = f"weekly-review_{snap.customer_id}_{current.start}_{current.end}"
-    return write_outputs(args.out, slug, report, actions, log, parameters)
+    return Review(ctx=ctx, actions=actions, log=log, data=data, records=records, periods=periods)
+
+
+def run_review(args: argparse.Namespace) -> Path:
+    r = build_review(args)
+    report = render_report(r.ctx, r.actions, r.log, r.data)
+    slug = f"weekly-review_{r.ctx.customer_id}_{r.ctx.current.start}_{r.ctx.current.end}"
+    return write_outputs(args.out, slug, report, r.actions, r.log, r.data.parameters)
 
 
 def build_parser() -> argparse.ArgumentParser:
