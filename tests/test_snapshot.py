@@ -69,5 +69,33 @@ class RunSnapshotTest(unittest.TestCase):
             self.assertEqual(json.loads(saved[0].read_text())["payload_kind"], "error")
 
 
+
+class ServerConfigTest(unittest.TestCase):
+    def write_cfg(self, env):
+        import tempfile
+        fh = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
+        json.dump({"mcpServers": {"google-ads-mcp": {"command": "pipx", "args": ["run", "x"], "env": env}}}, fh)
+        fh.close()
+        return Path(fh.name)
+
+    def test_env_var_references_expanded(self):
+        import os
+        from snapshot import load_server_config
+        os.environ["SYNTH_TOKEN_FOR_TEST"] = "abc"
+        cmd, env = load_server_config(self.write_cfg({"GOOGLE_ADS_DEVELOPER_TOKEN": "${SYNTH_TOKEN_FOR_TEST}"}))
+        self.assertEqual(cmd, ["pipx", "run", "x"])
+        self.assertEqual(env["GOOGLE_ADS_DEVELOPER_TOKEN"], "abc")
+
+    def test_unset_env_var_stops(self):
+        from snapshot import load_server_config
+        with self.assertRaises(StopAnalysis):
+            load_server_config(self.write_cfg({"X": "${SYNTH_DEFINITELY_UNSET_VAR}"}))
+
+    def test_placeholder_stops(self):
+        from snapshot import load_server_config
+        with self.assertRaises(StopAnalysis):
+            load_server_config(self.write_cfg({"GOOGLE_PROJECT_ID": "YOUR_PROJECT_ID"}))
+
+
 if __name__ == "__main__":
     unittest.main()

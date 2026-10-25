@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shlex
 import sys
@@ -66,11 +67,23 @@ def load_server_config(path: Path) -> tuple[list[str], dict]:
     if not path.exists():
         raise StopAnalysis(f"{path} not found; copy .mcp.json.example and configure it (see docs/mcp-setup.md)")
     server = json.loads(path.read_text())["mcpServers"]["google-ads-mcp"]
-    env = server.get("env", {})
-    unset = [k for k, v in env.items() if str(v).startswith(("YOUR_", "PATH_TO_"))]
+    env = {k: _expand(str(v), k) for k, v in server.get("env", {}).items()}
+    unset = [k for k, v in env.items() if v.startswith(("YOUR_", "PATH_TO_"))]
     if unset:
         raise StopAnalysis(f".mcp.json still has placeholder values for: {', '.join(unset)}")
     return [server["command"], *server.get("args", [])], env
+
+
+def _expand(value: str, key: str) -> str:
+    """Expand ${VAR} and ${VAR:-default} like Claude Code does for .mcp.json."""
+    def sub(m: re.Match) -> str:
+        name, default = m.group(1), m.group(3)
+        if name in os.environ:
+            return os.environ[name]
+        if default is not None:
+            return default
+        raise StopAnalysis(f".mcp.json env {key} references unset environment variable {name}")
+    return re.sub(r"\$\{(\w+)(:-([^}]*))?\}", sub, value)
 
 
 def run_snapshot(query: str, customer_id: str, start: date | None, end: date | None,
