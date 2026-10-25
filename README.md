@@ -14,6 +14,7 @@ and tested on synthetic data. **No ad account is connected yet.**
 | Weekly performance review | `weekly-review` | `scripts/weekly_review.py` | report + action register |
 | Search-term review | `search-term-review` | `scripts/search_terms.py` | review + negative candidates + conflicts |
 | Product review | `product-review` | `scripts/product_review.py` | item table + join check |
+| Check the OAuth/MCP connection | `onboarding` | `scripts/check_connection.py` | pass/fail checklist (no secrets printed) |
 | Fetch data (read-only) | all | `scripts/snapshot.py`, `scripts/inspect_snapshot.py` | `data/raw/*.json` |
 
 Sample output, generated from labelled synthetic data: [`docs/examples/`](docs/examples/).
@@ -56,14 +57,20 @@ python3 scripts/context_status.py               # what context is still missing
 ```
 
 ### Running onboarding (on your machine)
-1. Connect the MCP server: follow [`docs/mcp-setup.md`](docs/mcp-setup.md). You configure credentials
-   locally; never paste them into chat.
+1. Connect the MCP server with OAuth: follow [`docs/mcp-setup.md`](docs/mcp-setup.md). You configure
+   credentials locally; never paste them into chat. Check the setup with
+   `python3 scripts/check_connection.py --live --customer-id <ID>`.
 2. Open Claude Code in this folder and say **"run onboarding"**. Claude will:
    - list the missing context (blockers first);
    - read currency, timezone, campaigns and conversion actions from the account (read-only);
    - run the **contract gate** (`inspect_snapshot.py`) on the first real response;
    - ask you once, in a single grouped message, for what the account can't tell it.
 3. When the blockers are cleared, say **"weekly review for last week"**.
+
+### Adding other users
+Colleagues, agencies, freelancers or client-side users each connect with their own Google login and
+credentials, ideally with **Read-only** Google Ads access. See
+[`docs/mcp-setup.md` › Adding other users](docs/mcp-setup.md#adding-other-users), which also covers removing access.
 
 ## Taking action — future
 The system is designed to move from analysis to action **behind approval gates**. The pipeline exists;

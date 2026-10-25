@@ -1,0 +1,8 @@
+{
+  "_synthetic": "SYNTHETIC TEST DATA - NOT REAL",
+  "_shape": "Mirrors customers_list_accessible_customers in googleads/google-ads-mcp v0.0.5: List[str] wrapped by FastMCP",
+  "result": {
+    "structuredContent": {"result": ["9000000001", "9000000002"]},
+    "content": [{"type": "text", "text": "[\"9000000001\", \"9000000002\"]"}]
+  }
+}

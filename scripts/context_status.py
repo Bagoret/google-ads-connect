@@ -79,7 +79,7 @@ def readiness_markdown(fields: list[Field], mcp_configured: bool, snapshots: lis
     L += ["", "## MCP and data checklist", "",
           f"- [{'x' if mcp_configured else ' '}] `.mcp.json` configured for the official Google Ads MCP server "
           "(see `docs/mcp-setup.md`)",
-          "- [ ] `list_accessible_customers` returns the expected customer ID",
+          "- [ ] `python3 scripts/check_connection.py --live --customer-id <ID>` passes (OAuth, server, account access)",
           f"- [{'x' if snapshots else ' '}] First snapshot saved: "
           "`python3 scripts/snapshot.py --query customer_settings --customer-id <ID>`",
           "- [ ] Contract gate: `python3 scripts/inspect_snapshot.py <snapshot>` shows a known shape and no unmapped "
