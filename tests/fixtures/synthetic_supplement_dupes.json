@@ -1,0 +1,14 @@
+{
+ "_synthetic": "SYNTHETIC TEST DATA - NOT REAL",
+ "margin_definition": "SYNTHETIC",
+ "items": [
+  {
+   "item_id": "SYNTH-SKU-001",
+   "margin_rate": "0.40"
+  },
+  {
+   "item_id": "synth-sku-001 ",
+   "margin_rate": "0.30"
+  }
+ ]
+}
