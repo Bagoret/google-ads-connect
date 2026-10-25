@@ -1,0 +1,20 @@
+{
+  "parameters": {
+    "snapshot": "tests/fixtures/synthetic_weekly_two_weeks.json",
+    "current": "2026-10-13:2026-10-19",
+    "previous": "2026-10-06:2026-10-12",
+    "expected_currency": "EUR",
+    "timezone": "None",
+    "conversion_lag_days": "None",
+    "target_roas": "None",
+    "target_cpa": "None",
+    "now": "2026-10-25T09:00:00+00:00",
+    "out": "docs/examples"
+  },
+  "log": {
+    "assumptions": [],
+    "warnings": [],
+    "excluded": [],
+    "errors": []
+  }
+}
