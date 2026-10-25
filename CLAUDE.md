@@ -29,6 +29,8 @@ e-commerce business. Data source: **read-only Google Ads MCP (OAuth)**. Not conn
 8. Never print, store, or commit credentials, tokens, or personal customer data.
 9. **No external account changes.** No writes to Google Ads, Merchant Center,
    GA4, or any ad platform — even if a tool offers it. Output proposals only.
+   Future writes go only through `scripts/gads/changes.py` (see `docs/write-path.md`);
+   never edit `config/execution.json`.
 10. `decisions/change-log.md` records only changes the user has **approved**,
     not suggestions. Unapproved ideas live in action registers.
 11. Write in clear English unless the user asks for French.

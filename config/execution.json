@@ -1,0 +1,5 @@
+{
+  "_note": "Kill switch for account writes. Only the account owner edits this file, by hand. Claude is denied edits in .claude/settings.json.",
+  "writes_enabled": false,
+  "executor": "disabled"
+}
