@@ -1,0 +1,3 @@
+SELECT campaign.id, campaign.name, campaign.status, campaign.advertising_channel_type, campaign.advertising_channel_sub_type, campaign.bidding_strategy_type, campaign_budget.id, campaign_budget.amount_micros
+FROM campaign
+WHERE campaign.status != 'REMOVED'

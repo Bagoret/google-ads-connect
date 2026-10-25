@@ -1,0 +1,61 @@
+{
+  "customer.id": {"name": "customer_id", "type": "id"},
+  "customer.descriptive_name": {"name": "customer_name", "type": "str"},
+  "customer.currency_code": {"name": "currency", "type": "str"},
+  "customer.time_zone": {"name": "time_zone", "type": "str"},
+  "customer.auto_tagging_enabled": {"name": "auto_tagging_enabled", "type": "str"},
+
+  "campaign.id": {"name": "campaign_id", "type": "id"},
+  "campaign.name": {"name": "campaign_name", "type": "str"},
+  "campaign.status": {"name": "campaign_status", "type": "str"},
+  "campaign.advertising_channel_type": {"name": "channel_type", "type": "str"},
+  "campaign.advertising_channel_sub_type": {"name": "channel_sub_type", "type": "str"},
+  "campaign.bidding_strategy_type": {"name": "bidding_strategy_type", "type": "str"},
+  "campaign_budget.id": {"name": "budget_id", "type": "id"},
+  "campaign_budget.amount_micros": {"name": "budget_amount", "type": "micros"},
+
+  "ad_group.id": {"name": "ad_group_id", "type": "id"},
+  "ad_group.name": {"name": "ad_group_name", "type": "str"},
+  "ad_group_criterion.criterion_id": {"name": "criterion_id", "type": "id"},
+  "ad_group_criterion.keyword.text": {"name": "keyword_text", "type": "str"},
+  "ad_group_criterion.keyword.match_type": {"name": "match_type", "type": "str"},
+  "ad_group_criterion.status": {"name": "criterion_status", "type": "str"},
+  "ad_group_criterion.negative": {"name": "negative", "type": "str"},
+
+  "campaign_criterion.criterion_id": {"name": "criterion_id", "type": "id"},
+  "campaign_criterion.keyword.text": {"name": "keyword_text", "type": "str"},
+  "campaign_criterion.keyword.match_type": {"name": "match_type", "type": "str"},
+
+  "shared_set.id": {"name": "shared_set_id", "type": "id"},
+  "shared_set.name": {"name": "shared_set_name", "type": "str"},
+  "shared_criterion.criterion_id": {"name": "criterion_id", "type": "id"},
+  "shared_criterion.keyword.text": {"name": "keyword_text", "type": "str"},
+  "shared_criterion.keyword.match_type": {"name": "match_type", "type": "str"},
+  "campaign_shared_set.status": {"name": "shared_set_link_status", "type": "str"},
+
+  "conversion_action.id": {"name": "conversion_action_id", "type": "id"},
+  "conversion_action.name": {"name": "conversion_action_name", "type": "str"},
+  "conversion_action.type": {"name": "conversion_action_type", "type": "str"},
+  "conversion_action.category": {"name": "conversion_category", "type": "str"},
+  "conversion_action.status": {"name": "conversion_action_status", "type": "str"},
+  "conversion_action.primary_for_goal": {"name": "primary_for_goal", "type": "str"},
+  "conversion_action.include_in_conversions_metric": {"name": "include_in_conversions", "type": "str"},
+  "conversion_action.counting_type": {"name": "counting_type", "type": "str"},
+  "conversion_action.click_through_lookback_window_days": {"name": "click_lookback_days", "type": "int"},
+
+  "search_term_view.search_term": {"name": "search_term", "type": "str"},
+  "search_term_view.status": {"name": "search_term_status", "type": "str"},
+  "segments.keyword.info.text": {"name": "matched_keyword_text", "type": "str"},
+  "segments.keyword.info.match_type": {"name": "matched_keyword_match_type", "type": "str"},
+
+  "segments.product_item_id": {"name": "item_id", "type": "str"},
+  "segments.product_title": {"name": "product_title", "type": "str"},
+  "segments.product_brand": {"name": "product_brand", "type": "str"},
+
+  "segments.date": {"name": "date", "type": "date"},
+  "metrics.impressions": {"name": "impressions", "type": "int"},
+  "metrics.clicks": {"name": "clicks", "type": "int"},
+  "metrics.cost_micros": {"name": "cost", "type": "micros"},
+  "metrics.conversions": {"name": "conversions", "type": "decimal"},
+  "metrics.conversions_value": {"name": "conversion_value", "type": "decimal"}
+}

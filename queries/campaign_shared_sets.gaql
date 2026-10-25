@@ -1,0 +1,2 @@
+SELECT campaign.id, shared_set.id, campaign_shared_set.status
+FROM campaign_shared_set
