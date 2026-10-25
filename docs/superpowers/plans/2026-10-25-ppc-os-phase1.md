@@ -452,9 +452,67 @@ def test_stop_creates_no_output(tmp):
 - [ ] **Step 1:** Write README.
 - [ ] **Step 2:** Run `python3 -m unittest discover -s tests -v` → all PASS; paste summary into the PR body.
 - [ ] **Step 3:** `git grep -niE "csv"` → only the "no CSV" constraint lines remain.
-- [ ] **Step 4:** Commit, push `phase1-ppc-os`, open PR to `main`.
+- [ ] **Step 4:** Commit. (Push and PR happen after Task 14.)
 
 **CHECKPOINT B — final review: what is complete, what is untested (live MCP contract, real field names, OAuth flow), exact onboarding steps.**
+
+### Task 14: Write-action groundwork (approval-gated, disabled)
+
+Added 2026-10-25 at user request: "lay track to be able not only to read data but take action". Builds the change pipeline **without** any code that can reach an account.
+
+**Files:**
+- Create: `scripts/gads/changes.py`, `config/execution.json` (`{"writes_enabled": false, "executor": "disabled"}`), `docs/write-path.md`
+- Modify: `README.md` (section "Taking action — future"), `CLAUDE.md` (one line pointing to the pipeline)
+- Test: `tests/test_changes.py`
+
+**Interfaces:**
+- Consumes: `Action` (Task 8) only as a source of `rationale`/`evidence`.
+- Produces:
+  - `OPERATIONS: dict[str, frozenset[str]]` — operation → required params: `pause_campaign {campaign_id}`, `enable_campaign {campaign_id}`, `set_campaign_budget {campaign_id, budget_id, amount_micros_before, amount_micros_after}`, `set_campaign_target_roas {campaign_id, before, after}`, `set_campaign_target_cpa {campaign_id, before_micros, after_micros}`, `pause_ad_group {ad_group_id}`, `pause_keyword {ad_group_id, criterion_id}`, `add_campaign_negative_keyword {campaign_id, text, match_type}`, `add_shared_negative_keyword {shared_set_id, text, match_type}`.
+  - `STATUSES` transitions: `proposed → approved | rejected`; `approved → executed | proposed` (re-opened); `executed → verified | rolled_back`.
+  - `@dataclass ChangeRequest(id: str, customer_id: str, operation: str, params: dict, rationale: str, evidence: str, status: str = "proposed", approval: dict | None = None, history: list[dict] = [])`; `fingerprint() -> str` (sha256 of canonical JSON of customer_id, operation, params); `to_dict()` / `from_dict()`.
+  - `validate_change(cr) -> list[str]` (unknown operation, missing/extra params, match_type ∉ {EXACT, PHRASE, BROAD}, customer_id not 10 digits, before == after).
+  - `transition(cr, new_status: str, actor: str, at: datetime, note: str = "") -> None` — raises `IllegalTransition`.
+  - `approve(cr, approver: str, fingerprint: str, at: datetime) -> None` — fingerprint must equal `cr.fingerprint()` (approval binds to exact content); `validate_change` must be empty.
+  - `class WritesDisabled(Exception)`; `class DisabledExecutor` whose `execute(cr)` always raises `WritesDisabled`.
+  - `execute_change(cr, executor, config: dict) -> dict` — order of checks: `config["writes_enabled"] is True`, status `approved`, stored approval fingerprint == current fingerprint; then delegates. Phase 1 ships only `DisabledExecutor`.
+  - `record_approved(cr, change_log: Path) -> None` — appends a row to `decisions/change-log.md`; refuses unless status ∈ {approved, executed, verified, rolled_back}.
+  - `save_request(cr, root: Path = Path("outputs/change-requests")) -> Path` (exclusive create per status revision).
+
+- [ ] **Step 1: Write the failing tests**
+```python
+def test_unknown_operation_invalid():
+    assert validate_change(cr(operation="delete_account"))
+
+def test_approval_requires_matching_fingerprint():
+    c = cr(); with self.assertRaises(ValueError): approve(c, "owner", "deadbeef", NOW)
+
+def test_edit_after_approval_blocks_execution():
+    c = cr(); approve(c, "owner", c.fingerprint(), NOW); c.params["amount_micros_after"] = 999
+    with self.assertRaises(PermissionError): execute_change(c, DisabledExecutor(), {"writes_enabled": True})
+
+def test_writes_disabled_by_config_even_if_approved():
+    c = cr(); approve(c, "owner", c.fingerprint(), NOW)
+    with self.assertRaises(WritesDisabled): execute_change(c, DisabledExecutor(), {"writes_enabled": False})
+
+def test_disabled_executor_always_refuses():
+    c = cr(); approve(c, "owner", c.fingerprint(), NOW)
+    with self.assertRaises(WritesDisabled): execute_change(c, DisabledExecutor(), {"writes_enabled": True})
+
+def test_proposed_cannot_be_executed_or_logged():
+    with self.assertRaises(PermissionError): execute_change(cr(), DisabledExecutor(), {"writes_enabled": True})
+    with self.assertRaises(PermissionError): record_approved(cr(), tmp_log)
+
+def test_illegal_transition():
+    with self.assertRaises(IllegalTransition): transition(cr(), "executed", "x", NOW)
+
+def test_shipped_config_has_writes_disabled():
+    assert json.loads(Path("config/execution.json").read_text())["writes_enabled"] is False
+```
+- [ ] **Step 2:** Run `python3 -m unittest tests.test_changes -v` → FAIL.
+- [ ] **Step 3:** Implement `scripts/gads/changes.py`; write `docs/write-path.md` (why the official MCP cannot write; future executor options: Google Ads API mutate via the official `google-ads` Python client — a dependency to approve then; required safeguards: per-change approval fingerprint, dry-run with `validate_only=true`, change-log entry, post-change verification snapshot, rollback params captured as `before` values).
+- [ ] **Step 4:** Run full suite → PASS.
+- [ ] **Step 5:** Commit `feat: approval-gated change pipeline (writes disabled)`; push `phase1-ppc-os`; open PR to `main`.
 
 ---
 
