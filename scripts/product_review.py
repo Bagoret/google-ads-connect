@@ -21,7 +21,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gads.logbook import RunLog, StopAnalysis  # noqa: E402
 from gads.metrics import Totals, derive, fmt, group_by  # noqa: E402
 from gads.normalize import records_from_snapshot, unique_dir  # noqa: E402
-from gads.validate import check_single_currency, check_unique  # noqa: E402
+from gads.validate import (account_timezone, check_date_coverage, check_single_currency, check_unique,  # noqa: E402
+                           parse_now, partial_data_caveats)
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE_GRAIN = ("item_id", "campaign_id", "date")
@@ -81,6 +82,9 @@ def run(args) -> Path:
         raise StopAnalysis("snapshot contains no usable rows")
     check_unique(records, SOURCE_GRAIN)
     currency = check_single_currency(records, args.expected_currency)
+    caveats = partial_data_caveats(snap.end, account_timezone(records, args.timezone), args.conversion_lag_days,
+                                   parse_now(args.now))
+    check_date_coverage(records, snap.start, snap.end, log)
     for r in records:
         r["item_id"] = normalize_item_id(r["item_id"])
     titles = {r["item_id"]: (r.get("product_title", ""), r.get("product_brand", "")) for r in records}
@@ -112,7 +116,7 @@ def run(args) -> Path:
     out = unique_dir(args.out, f"product-review_{snap.customer_id}_{snap.start}_{snap.end}")
     (out / "products.json").write_text(json.dumps({
         "source": snap.path.name, "date_range": [str(snap.start), str(snap.end)], "currency": currency,
-        "synthetic": snap.synthetic, "grain": "item_id × period", "margin_definition": definition,
+        "synthetic": snap.synthetic, "grain": "item_id × period", "caveats": caveats, "margin_definition": definition,
         "products": products, "unmatched": {"only_in_performance": only_perf, "only_in_supplement": only_supp},
         "log": log.to_dict(),
     }, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -122,6 +126,7 @@ def run(args) -> Path:
         L += ["> **SYNTHETIC TEST DATA — NOT REAL.**", ""]
     L += [f"Source: `{snap.path.name}` · Currency: {currency} · Grain: item_id × period "
           f"(from {' × '.join(SOURCE_GRAIN)}) · {len(products)} items", ""]
+    L += ["## Data caveats", "", *([f"- {c}" for c in caveats] or ["- None from timing."]), ""]
     if definition:
         L += [f"Margin definition (supplied): {definition}. `margin_after_ad_cost` = conversion value × margin rate "
               "− ad cost; it excludes returns, shipping and other costs unless the definition includes them.", ""]
@@ -148,6 +153,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--products", type=Path, required=True)
     ap.add_argument("--supplement", type=Path)
     ap.add_argument("--expected-currency")
+    ap.add_argument("--timezone", help="only if the snapshot lacks customer.time_zone")
+    ap.add_argument("--conversion-lag-days", type=int)
+    ap.add_argument("--now", help="ISO-8601 timestamp for partial-data checks (default: now; no offset = UTC)")
     ap.add_argument("--out", type=Path, default=ROOT / "outputs")
     args = ap.parse_args(argv)
     try:

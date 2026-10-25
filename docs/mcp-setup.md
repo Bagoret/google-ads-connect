@@ -17,8 +17,12 @@ and the [Google Ads MCP server guide](https://developers.google.com/google-ads/a
 This repo's own scripts need **no** extra packages (standard library only).
 
 ## What the server can do
-Tools: `search` (GAQL queries), `list_accessible_customers`, `get_resource_metadata`. They may appear
-namespaced, e.g. `search_search`. Google's documentation lists no write tools. This repo adds two more
+Tools (v0.0.5): `search_search`, `customers_list_accessible_customers`, `metadata_get_resource_metadata`.
+`search` does not take a GAQL string: it takes `customer_id`, `fields[]`, `resource`, `conditions[]`
+(ANDed), `orderings[]`, `limit`, and builds the query itself. `scripts/snapshot.py` converts each
+`queries/*.gaql` file into those parts and records the exact arguments sent in the snapshot. Results come
+back as `{"result": [ {"campaign.id": …, "metrics.cost_micros": …}, … ]}`. The tests use the upstream tool
+list copied into `tests/fixtures/upstream_golden_tools_list.json`; re-copy it whenever you change the pinned version. Google's documentation lists no write tools. This repo adds two more
 layers: `scripts/gads/mcp_client.py` refuses any tool outside a read-only allowlist, and
 `.claude/settings.json` denies the GoMarble connector in this project.
 

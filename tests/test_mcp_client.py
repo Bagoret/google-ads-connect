@@ -34,9 +34,9 @@ class ClientTest(unittest.TestCase):
         with McpStdioClient(FAKE, env=env, timeout_s=20) as c:
             self.assertEqual(c.initialize()["name"], "fake-google-ads-mcp")
             tools = c.list_tools()
-            self.assertEqual(tools[0]["name"], "search")
+            self.assertIn("search_search", [t["name"] for t in tools])
             kind, payload = extract_payload(
-                c.call_tool("search", {"customer_id": "9000000001", "query": "SELECT campaign.id FROM campaign"})
+                c.call_tool("search_search", {"customer_id": "9000000001", "fields": ["campaign.id"], "resource": "campaign"})
             )
         self.assertIn(kind, ("structured", "json_text"))
         self.assertIsInstance(payload, list)

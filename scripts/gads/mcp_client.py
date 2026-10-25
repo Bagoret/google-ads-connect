@@ -32,7 +32,12 @@ class ToolNotAllowed(Exception):
 
 
 class McpError(Exception):
-    pass
+    """Protocol-level failure. The server's stderr is kept in .stderr_tail, never in the message,
+    because it can contain request details."""
+
+    def __init__(self, message: str, stderr_tail: str = ""):
+        super().__init__(message)
+        self.stderr_tail = stderr_tail
 
 
 class McpStdioClient:
@@ -89,9 +94,9 @@ class McpStdioClient:
             try:
                 line = self._lines.get(timeout=self.timeout_s)
             except queue.Empty:
-                raise McpError(f"timeout waiting for {method}; server stderr: {self._stderr_tail()}")
+                raise McpError(f"timeout waiting for {method}", self._stderr_tail())
             if line is None:
-                raise McpError(f"server exited during {method}; server stderr: {self._stderr_tail()}")
+                raise McpError(f"server exited during {method}", self._stderr_tail())
             line = line.strip()
             if not line:
                 continue

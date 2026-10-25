@@ -40,7 +40,7 @@ config/                   field map, thresholds, campaign classification, brand 
 queries/                  versioned read-only GAQL
 scripts/                  CLIs + scripts/gads/ engine (standard library only)
 .claude/skills/           onboarding, weekly-review, search-term-review, product-review
-.claude/settings.json     permission denies (GoMarble connector, edits to data/raw and the kill switch)
+.claude/settings.json     best-effort denies (GoMarble connector; Edit/Write tools on data/raw and the kill switch)
 data/raw, data/processed  account data (gitignored)
 outputs/                  reports (gitignored)
 decisions/                change log (approved only), experiment log
@@ -80,6 +80,10 @@ writing is disabled. See [`docs/write-path.md`](docs/write-path.md).
   readable by anyone or anything with access to your machine, including AI tools. Files committed before
   being ignored stay in git history. Keep credential files outside the repo and restrict their permissions.
 - Account data can include search terms typed by real people; treat outputs as confidential.
+- **The `.claude/settings.json` deny rules are best-effort.** They block Claude's Edit/Write tools on
+  `data/raw/` and `config/execution.json` and the GoMarble connector, but not shell commands. The real
+  Phase 1 safeguards are structural: snapshots are created with exclusive-create (never overwritten),
+  the MCP client only calls read tools, and no write executor exists.
 
 ## Roadmap
 1. **Connect** — run onboarding on your machine and pass the contract gate.

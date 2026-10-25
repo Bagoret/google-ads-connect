@@ -9,12 +9,12 @@ Statements are labelled **Observed** (from the named snapshot), **Hypothesis**, 
 - Snapshot: `synthetic_weekly_two_weeks.json` (query `campaign_daily`, fetched 2026-10-25T09:00:00+00:00)
 - Customer ID: 9000000000 · Currency: EUR
 - Requested range in snapshot: 2026-10-06 to 2026-10-19
-- Grain: campaign_id × date · Rows used: 42 · Rows excluded: 0
+- Grain: campaign_id × date · Rows used: 49 · Rows excluded: 0
 - Current period: 2026-10-13 to 2026-10-19 · Previous period: 2026-10-06 to 2026-10-12
 
 ## Validation log
 
-- No assumptions, warnings, or excluded rows.
+- Warning: campaign 9000000004 has rows in the previous period but none in the current period (shown with zero current activity)
 
 ## Comparison validity
 
@@ -25,8 +25,8 @@ Equivalent periods (7 days each, same weekday mix, no overlap). Deltas shown.
 | Period | Cost | Impr. | Clicks | Conv. | Conv. value | CPC | CTR | CVR | CPA | ROAS |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Current (2026-10-13 to 2026-10-19) | 273.00 EUR | 11,900 | 595 | 12.81 | 507.50 EUR | 0.46 EUR | 5.00% | 2.15% | 21.31 EUR | 1.86 |
-| Previous (2026-10-06 to 2026-10-12) | 238.00 EUR | 11,900 | 525 | 14.00 | 560.00 EUR | 0.45 EUR | 4.41% | 2.67% | 17.00 EUR | 2.35 |
-| Δ % | +14.7% | +0.0% | +13.3% | -8.5% | -9.4% | +1.2% | +13.3% | -19.3% | +25.4% | -21.0% |
+| Previous (2026-10-06 to 2026-10-12) | 273.00 EUR | 12,600 | 595 | 17.50 | 630.00 EUR | 0.46 EUR | 4.72% | 2.94% | 15.60 EUR | 2.31 |
+| Δ % | +0.0% | -5.6% | +0.0% | -26.8% | -19.4% | +0.0% | +5.9% | -26.8% | +36.6% | -19.4% |
 
 ## By campaign type
 
@@ -43,8 +43,8 @@ Equivalent periods (7 days each, same weekday mix, no overlap). Deltas shown.
 | Period | Cost | Impr. | Clicks | Conv. | Conv. value | CPC | CTR | CVR | CPA | ROAS |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Current (2026-10-13 to 2026-10-19) | 105.00 EUR | 2,800 | 210 | 2.31 | 87.50 EUR | 0.50 EUR | 7.50% | 1.10% | 45.45 EUR | 0.83 |
-| Previous (2026-10-06 to 2026-10-12) | 70.00 EUR | 2,800 | 140 | 3.50 | 140.00 EUR | 0.50 EUR | 5.00% | 2.50% | 20.00 EUR | 2.00 |
-| Δ % | +50.0% | +0.0% | +50.0% | -34.0% | -37.5% | +0.0% | +50.0% | -56.0% | +127.3% | -58.3% |
+| Previous (2026-10-06 to 2026-10-12) | 105.00 EUR | 3,500 | 210 | 7.00 | 210.00 EUR | 0.50 EUR | 6.00% | 3.33% | 15.00 EUR | 2.00 |
+| Δ % | +0.0% | -20.0% | +0.0% | -67.0% | -58.3% | +0.0% | +25.0% | -67.0% | +203.0% | -58.3% |
 
 **SHOPPING**
 
@@ -63,8 +63,8 @@ Brand categories come from `config/campaign_classification.json`; `unclassified`
 | Period | Cost | Impr. | Clicks | Conv. | Conv. value | CPC | CTR | CVR | CPA | ROAS |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Current (2026-10-13 to 2026-10-19) | 273.00 EUR | 11,900 | 595 | 12.81 | 507.50 EUR | 0.46 EUR | 5.00% | 2.15% | 21.31 EUR | 1.86 |
-| Previous (2026-10-06 to 2026-10-12) | 238.00 EUR | 11,900 | 525 | 14.00 | 560.00 EUR | 0.45 EUR | 4.41% | 2.67% | 17.00 EUR | 2.35 |
-| Δ % | +14.7% | +0.0% | +13.3% | -8.5% | -9.4% | +1.2% | +13.3% | -19.3% | +25.4% | -21.0% |
+| Previous (2026-10-06 to 2026-10-12) | 273.00 EUR | 12,600 | 595 | 17.50 | 630.00 EUR | 0.46 EUR | 4.72% | 2.94% | 15.60 EUR | 2.31 |
+| Δ % | +0.0% | -5.6% | +0.0% | -26.8% | -19.4% | +0.0% | +5.9% | -26.8% | +36.6% | -19.4% |
 
 ## By campaign
 
@@ -73,11 +73,13 @@ Brand categories come from `config/campaign_classification.json`; `unclassified`
 | 9000000001 | SYNTH_Shopping_A | SHOPPING | unclassified | 140.00 EUR | 350 | 10.50 | 13.33 EUR | 3.00 | +0.0% |
 | 9000000002 | SYNTH_Search_Renamed | SEARCH | unclassified | 105.00 EUR | 210 | 2.31 | 45.45 EUR | 0.83 | +50.0% |
 | 9000000003 | SYNTH_PMax_C | PERFORMANCE_MAX | unclassified | 28.00 EUR | 35 | 0.00 | N/A | 0.00 | +0.0% |
+| 9000000004 | SYNTH_Search_Stopped | SEARCH | unclassified | 0.00 EUR | 0 | 0.00 | N/A | N/A | -100.0% |
 
 ## Observed material changes
 
-- **Observed** [account 9000000000]: Material change vs 2026-10-06 to 2026-10-12: CPA +25.4%, ROAS -21.0%. Evidence: current 2026-10-13 to 2026-10-19: cost=273.00 EUR, clicks=595, conv=12.81, value=507.50 EUR, CPA=21.31 EUR, ROAS=1.86, CVR=2.15%; previous 2026-10-06 to 2026-10-12: cost=238.00 EUR, clicks=525, conv=14.00, value=560.00 EUR, CPA=17.00 EUR, ROAS=2.35, CVR=2.67%; source=synthetic_weekly_two_weeks.json
+- **Observed** [account 9000000000]: Material change vs 2026-10-06 to 2026-10-12: CPA +36.6%, CVR -26.8%. Evidence: current 2026-10-13 to 2026-10-19: cost=273.00 EUR, clicks=595, conv=12.81, value=507.50 EUR, CPA=21.31 EUR, ROAS=1.86, CVR=2.15%; previous 2026-10-06 to 2026-10-12: cost=273.00 EUR, clicks=595, conv=17.50, value=630.00 EUR, CPA=15.60 EUR, ROAS=2.31, CVR=2.94%; source=synthetic_weekly_two_weeks.json
 - **Observed** [campaign 9000000002]: Material change vs 2026-10-06 to 2026-10-12: cost +50.0%, CPA +127.3%, ROAS -58.3%, CVR -56.0%. Evidence: current 2026-10-13 to 2026-10-19: cost=105.00 EUR, clicks=210, conv=2.31, value=87.50 EUR, CPA=45.45 EUR, ROAS=0.83, CVR=1.10%; previous 2026-10-06 to 2026-10-12: cost=70.00 EUR, clicks=140, conv=3.50, value=140.00 EUR, CPA=20.00 EUR, ROAS=2.00, CVR=2.50%; source=synthetic_weekly_two_weeks.json
+- **Observed** [campaign 9000000004]: Material change vs 2026-10-06 to 2026-10-12: cost -100.0%. Evidence: current 2026-10-13 to 2026-10-19: cost=0.00 EUR, clicks=0, conv=0.00, value=0.00 EUR, CPA=N/A, ROAS=N/A, CVR=N/A; previous 2026-10-06 to 2026-10-12: cost=35.00 EUR, clicks=70, conv=3.50, value=70.00 EUR, CPA=10.00 EUR, ROAS=2.00, CVR=5.00%; source=synthetic_weekly_two_weeks.json
 
 ## Measurement caveats
 
@@ -91,8 +93,9 @@ Full register: `actions.json` / `actions.md`. Every item is a **Recommendation**
 
 | # | Priority | Entity | Finding | Proposed action | Confidence |
 |---|---|---|---|---|---|
-| 1 | P2 | account 9000000000 | Material change vs 2026-10-06 to 2026-10-12: CPA +25.4%, ROAS -21.0% | Investigate drivers (change history, budget limits, auction metrics, promotions, stock, landing pages) before changing bids or budgets | medium |
+| 1 | P2 | account 9000000000 | Material change vs 2026-10-06 to 2026-10-12: CPA +36.6%, CVR -26.8% | Investigate drivers (change history, budget limits, auction metrics, promotions, stock, landing pages) before changing bids or budgets | medium |
 | 2 | P2 | campaign 9000000002 | Material change vs 2026-10-06 to 2026-10-12: cost +50.0%, CPA +127.3%, ROAS -58.3%, CVR -56.0% | Investigate drivers (change history, budget limits, auction metrics, promotions, stock, landing pages) before changing bids or budgets | medium |
+| 3 | P2 | campaign 9000000004 | Material change vs 2026-10-06 to 2026-10-12: cost -100.0% | Investigate drivers (change history, budget limits, auction metrics, promotions, stock, landing pages) before changing bids or budgets | medium |
 
 ## Thresholds used
 

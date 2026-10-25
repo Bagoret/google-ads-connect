@@ -14,7 +14,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 
@@ -23,10 +22,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gads.compare import Period, equivalence  # noqa: E402
 from gads.findings import ReviewContext, generate_actions  # noqa: E402
 from gads.logbook import RunLog, StopAnalysis  # noqa: E402
-from gads.metrics import aggregate, group_by  # noqa: E402
+from gads.metrics import Totals, aggregate, group_by  # noqa: E402
 from gads.normalize import apply_field_map, detect_grain, extract_rows, flatten_row, load_field_map, load_snapshot  # noqa: E402
 from gads.report import ReportData, render_report, write_outputs  # noqa: E402
-from gads.validate import check_date_coverage, check_single_currency, check_unique, partial_data_caveats  # noqa: E402
+from gads.validate import (account_timezone, check_date_coverage, check_single_currency, check_unique,  # noqa: E402
+                           parse_now, partial_data_caveats)
 
 ROOT = Path(__file__).resolve().parent.parent
 REQUIRED = {"campaign_id", "date", "cost", "clicks"}
@@ -82,11 +82,8 @@ def run_review(args: argparse.Namespace) -> Path:
         check_date_coverage(records, p.start, p.end, log)
     equivalent, reasons = equivalence(current, previous) if previous else (False, [])
 
-    zones = sorted({r["time_zone"] for r in records if r.get("time_zone")}) or ([args.timezone] if args.timezone else [])
-    if len(zones) != 1:
-        raise StopAnalysis(f"account timezone undetermined ({zones}); pass --timezone from context/business.md")
-    now = datetime.fromisoformat(args.now) if args.now else datetime.now(timezone.utc)
-    caveats = partial_data_caveats(current.end, zones[0], args.conversion_lag_days, now)
+    tz = account_timezone(records, args.timezone)
+    caveats = partial_data_caveats(current.end, tz, args.conversion_lag_days, parse_now(args.now))
 
     classification = _load_json(ROOT / "config" / "campaign_classification.json").get("campaigns", {})
     meta = _campaign_meta(records, classification)
@@ -99,7 +96,16 @@ def run_review(args: argparse.Namespace) -> Path:
     for label, recs in periods.items():
         for cid, totals in group_by(recs, "campaign_id").items():
             campaigns.setdefault(cid, {})[label] = totals
-    campaigns = {cid: t for cid, t in campaigns.items() if "current" in t}
+    # A campaign with previous-period rows but none now stopped serving (GAQL omits zero days):
+    # keep it with zero current totals so its -100% shows up instead of vanishing.
+    for cid, t in campaigns.items():
+        if "current" not in t:
+            prev = t["previous"]
+            zero = Decimal(0)
+            t["current"] = Totals(zero, 0, 0, None if prev.conversions is None else zero,
+                                  None if prev.conversion_value is None else zero, 0)
+            log.warn(f"campaign {cid} has rows in the previous period but none in the current period "
+                     "(shown with zero current activity)")
 
     targets = {}
     if args.target_roas is not None:

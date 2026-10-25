@@ -59,3 +59,22 @@ def partial_data_caveats(end: date, account_tz: str, lag_days: int | None, now_u
             caveats.append(f"period ended {max(age, 0)} day(s) ago, within the {lag_days}-day conversion delay: "
                            "conversions and conversion value are likely understated")
     return caveats
+
+
+def account_timezone(records: list[dict], fallback: str | None) -> str:
+    zones = sorted({r["time_zone"] for r in records if r.get("time_zone")}) or ([fallback] if fallback else [])
+    if len(zones) != 1:
+        raise StopAnalysis(f"account timezone undetermined ({zones}); pass --timezone from context/business.md")
+    return zones[0]
+
+
+def parse_now(text: str | None) -> datetime:
+    """--now value; an ISO timestamp without an offset is taken as UTC, never machine-local time."""
+    if not text:
+        from datetime import timezone
+        return datetime.now(timezone.utc)
+    now = datetime.fromisoformat(text)
+    if now.tzinfo is None:
+        from datetime import timezone
+        now = now.replace(tzinfo=timezone.utc)
+    return now

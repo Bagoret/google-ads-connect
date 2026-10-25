@@ -75,6 +75,15 @@ class CliTest(unittest.TestCase):
         self.assertEqual(data["unmatched"]["only_in_supplement"], ["synth-sku-999"])
         self.assertIn("SYNTHETIC gross margin", data["margin_definition"])
 
+    def test_partial_day_caveat(self):
+        code, dirs = self.run_cli("--now", "2026-10-14T12:00:00+00:00")
+        self.assertEqual(code, 0)
+        self.assertIn("partial", (dirs[0] / "review.md").read_text())
+
+    def test_conversion_delay_caveat_always_present_when_unknown(self):
+        code, dirs = self.run_cli("--now", "2026-10-25T12:00:00+00:00")
+        self.assertIn("conversion delay unknown", (dirs[0] / "review.md").read_text())
+
     def test_margin_without_definition_stops(self):
         code, dirs = self.run_cli("--supplement", str(FIX / "synthetic_supplement_no_definition.json"))
         self.assertEqual(code, 2)

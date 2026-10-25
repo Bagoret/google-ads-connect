@@ -22,19 +22,41 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from gads.logbook import StopAnalysis  # noqa: E402
-from gads.mcp_client import McpStdioClient, extract_payload  # noqa: E402
+from gads.mcp_client import McpError, McpStdioClient, extract_payload  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-SEARCH_TOOL_NAMES = ("search", "search_search")
+SEARCH_TOOL_NAMES = ("search_search", "search")
+# Upstream googleads/google-ads-mcp `search` builds the GAQL itself from these parts.
+STRUCTURED_PARAMS = {"customer_id", "fields", "resource", "conditions"}
+
+
+def parse_gaql(gaql: str) -> dict:
+    """Split a single-resource GAQL query into fields / resource / conditions (AND-joined)."""
+    m = re.fullmatch(r"\s*SELECT\s+(.+?)\s+FROM\s+(\w+)(?:\s+WHERE\s+(.+?))?\s*", gaql, re.I | re.S)
+    if not m:
+        raise StopAnalysis(f"cannot parse GAQL (only SELECT … FROM … [WHERE …] is supported): {gaql[:200]}")
+    fields = [f.strip() for f in m.group(1).split(",") if f.strip()]
+    conditions: list[str] = []
+    for piece in re.split(r"\s+AND\s+", m.group(3) or "", flags=re.I):
+        if not piece:
+            continue
+        if conditions and re.search(r"\bBETWEEN\s+\S+$", conditions[-1], re.I):
+            conditions[-1] = f"{conditions[-1]} AND {piece}"  # rejoin "BETWEEN x AND y"
+        else:
+            conditions.append(piece.strip())
+    return {"fields": fields, "resource": m.group(2), "conditions": conditions}
 
 
 def build_search_args(input_schema: dict, customer_id: str, query: str) -> dict:
-    props = list((input_schema or {}).get("properties", {}))
-    cust = [p for p in props if "customer" in p.lower()]
-    qry = [p for p in props if "query" in p.lower()]
-    if len(cust) != 1 or len(qry) != 1:
-        raise StopAnalysis(f"cannot map search tool parameters unambiguously: {props}")
-    return {cust[0]: customer_id, qry[0]: query}
+    props = set((input_schema or {}).get("properties", {}))
+    if STRUCTURED_PARAMS <= props:
+        parts = parse_gaql(query)
+        args = {"customer_id": customer_id, "fields": parts["fields"], "resource": parts["resource"]}
+        if parts["conditions"]:
+            args["conditions"] = parts["conditions"]
+        return args
+    raise StopAnalysis(f"search tool parameters do not match the supported contract "
+                       f"({sorted(STRUCTURED_PARAMS)}); server offers {sorted(props)}")
 
 
 def render_query(path: Path, start: date | None, end: date | None) -> str:
@@ -102,15 +124,22 @@ def run_snapshot(query: str, customer_id: str, start: date | None, end: date | N
         "start": start.isoformat() if start else None, "end": end.isoformat() if end else None,
         "fetched_at": fetched.isoformat(),
     }
-    with McpStdioClient(server_cmd, env=env) as client:
-        envelope["server_info"] = client.initialize()
-        tools = {t["name"]: t for t in client.list_tools()}
-        names = [n for n in SEARCH_TOOL_NAMES if n in tools]
-        if not names:
-            raise StopAnalysis(f"no search tool found; server offers: {sorted(tools)}")
-        tool = names[0]
-        envelope["tool_name"] = tool
-        result = client.call_tool(tool, build_search_args(tools[tool].get("inputSchema", {}), customer_id, gaql))
+    try:
+        with McpStdioClient(server_cmd, env=env) as client:
+            envelope["server_info"] = client.initialize()
+            tools = {t["name"]: t for t in client.list_tools()}
+            names = [n for n in SEARCH_TOOL_NAMES if n in tools]
+            if not names:
+                raise StopAnalysis(f"no search tool found; server offers: {sorted(tools)}")
+            tool = names[0]
+            arguments = build_search_args(tools[tool].get("inputSchema", {}), customer_id, gaql)
+            envelope.update(tool_name=tool, tool_arguments=arguments)
+            result = client.call_tool(tool, arguments)
+    except McpError as exc:
+        # Save what happened (message only — server stderr may hold request details), then stop.
+        envelope.update(payload_kind="error", payload={"protocol_error": str(exc)})
+        write_snapshot(path, envelope)
+        raise StopAnalysis(f"MCP protocol failure: {exc}")
     try:
         kind, payload = extract_payload(result)
     except StopAnalysis:

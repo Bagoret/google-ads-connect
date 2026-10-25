@@ -55,7 +55,7 @@ def extract_rows(payload: object, log: RunLog) -> list[dict]:
         token = payload.get("nextPageToken") or payload.get("next_page_token")
         if token:
             raise StopAnalysis("response is paginated (nextPageToken present); refusing to analyse a partial result")
-        for key in ("results", "rows"):
+        for key in ("result", "results", "rows"):  # "result": FastMCP wraps list returns
             if isinstance(payload.get(key), list):
                 log.assume(f"rows read from response key '{key}'")
                 payload = payload[key]

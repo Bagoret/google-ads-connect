@@ -79,6 +79,25 @@ class CliTest(unittest.TestCase):
             self.assertEqual(code, 2)
             self.assertFalse(any(Path(tmp).iterdir()))
 
+    def test_currency_mismatch_stops(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            code = main(["--search-terms", str(FIX / "synthetic_search_terms.json"),
+                         "--keywords", str(FIX / "synthetic_keywords.json"),
+                         "--negatives", str(FIX / "synthetic_negatives.json"),
+                         "--expected-currency", "USD", "--out", tmp])
+            self.assertEqual(code, 2)
+
+    def test_caveats_and_currency_in_review(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            code = main(["--search-terms", str(FIX / "synthetic_search_terms.json"),
+                         "--keywords", str(FIX / "synthetic_keywords.json"),
+                         "--negatives", str(FIX / "synthetic_negatives.json"),
+                         "--now", "2026-10-19T12:00:00+00:00", "--out", tmp])
+            self.assertEqual(code, 0)
+            review = (next(Path(tmp).iterdir()) / "review.md").read_text()
+            self.assertIn("EUR", review)
+            self.assertIn("partial", review)
+
     def test_end_to_end(self):
         with tempfile.TemporaryDirectory() as tmp:
             brand = Path(tmp) / "brands.json"

@@ -13,7 +13,9 @@
   },
   "log": {
     "assumptions": [],
-    "warnings": [],
+    "warnings": [
+      "campaign 9000000004 has rows in the previous period but none in the current period (shown with zero current activity)"
+    ],
     "excluded": [],
     "errors": []
   }

@@ -1,17 +1,19 @@
 """Fake MCP stdio server for tests. SYNTHETIC — never talks to Google.
 
+Publishes the real upstream tool contract (tests/fixtures/upstream_golden_tools_list.json,
+copied from googleads/google-ads-mcp v0.0.5).
+
 Env:
   FAKE_FIXTURE  path to a JSON file whose "result" object is returned by tools/call.
+  FAKE_RECORD   optional path; the tools/call params are written there for assertions.
+  FAKE_MODE     "exit_on_call" = write to stderr and exit during tools/call.
 """
 import json
 import os
 import sys
+from pathlib import Path
 
-TOOLS = [{
-    "name": "search",
-    "description": "fake search",
-    "inputSchema": {"type": "object", "properties": {"customer_id": {"type": "string"}, "query": {"type": "string"}}},
-}]
+TOOLS = json.loads((Path(__file__).parent / "fixtures" / "upstream_golden_tools_list.json").read_text())["tools"]
 
 
 def reply(msg_id, result):
@@ -34,6 +36,11 @@ def main():
         elif method == "tools/list":
             reply(msg_id, {"tools": TOOLS})
         elif method == "tools/call":
+            if os.environ.get("FAKE_RECORD"):
+                Path(os.environ["FAKE_RECORD"]).write_text(json.dumps(msg["params"]))
+            if os.environ.get("FAKE_MODE") == "exit_on_call":
+                sys.stderr.write("SYNTH_STDERR_SECRET request details\n")
+                sys.exit(1)
             with open(os.environ["FAKE_FIXTURE"], encoding="utf-8") as fh:
                 reply(msg_id, json.load(fh)["result"])
         else:

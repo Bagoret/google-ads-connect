@@ -147,6 +147,13 @@ def _material_changes(ctx: ReviewContext, totals: dict[str, Totals]) -> list[str
     return changes
 
 
+def _comparison_volume(totals: dict[str, Totals]) -> int:
+    """Clicks backing a comparison: the smaller period, unless the entity stopped serving
+    (no current rows), in which case the previous period's volume is the evidence."""
+    cur, prev = totals["current"], totals["previous"]
+    return prev.clicks if cur.rows == 0 else min(cur.clicks, prev.clicks)
+
+
 def _rule_material(ctx: ReviewContext) -> list[Action]:
     if not (ctx.previous and ctx.equivalent):
         return []
@@ -167,7 +174,7 @@ def _rule_material(ctx: ReviewContext) -> list[Action]:
                 "Cause not determined from this data.",
                 "Reacting to noise or to conversions not yet attributed.",
                 "Identify the driver from change history and the commercial calendar; re-run next week to see if it persists.",
-                min(totals["current"].clicks, totals["previous"].clicks)))
+                _comparison_volume(totals)))
     return out
 
 

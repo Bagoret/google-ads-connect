@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gads.logbook import RunLog, StopAnalysis  # noqa: E402
 from gads.metrics import fmt, group_by  # noqa: E402
 from gads.normalize import records_from_snapshot, unique_dir  # noqa: E402
-from gads.validate import check_unique  # noqa: E402
+from gads.validate import account_timezone, check_single_currency, check_unique, parse_now, partial_data_caveats  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 COVERAGE_NOTE = ("The search-terms data does not include every search query: Google withholds low-volume "
@@ -134,6 +134,9 @@ def run(args) -> Path:
                                         log, "search_terms")
     grain = ("campaign_id", "ad_group_id", "search_term", "matched_keyword_text", "matched_keyword_match_type")
     check_unique(terms, grain)
+    currency = check_single_currency(terms, args.expected_currency)
+    caveats = partial_data_caveats(snap.end, account_timezone(terms, args.timezone), args.conversion_lag_days,
+                                   parse_now(args.now))
     _, kw_records = records_from_snapshot(args.keywords, {"campaign_id", "keyword_text", "match_type"}, log, "keywords")
     keywords = [k for k in kw_records if k.get("negative") != "true"]
     ad_group_negs = [{**k, "level": "ad_group", "scope_campaign_ids": [k["campaign_id"]]}
@@ -163,19 +166,20 @@ def run(args) -> Path:
     out = unique_dir(args.out, f"search-terms_{snap.customer_id}_{snap.start}_{snap.end}")
     (out / "candidates.json").write_text(json.dumps({
         "source": snap.path.name, "date_range": [str(snap.start), str(snap.end)], "synthetic": snap.synthetic,
-        "coverage_note": COVERAGE_NOTE, "terms": rows, "conflicts": conflicts, "log": log.to_dict(),
+        "currency": currency, "caveats": caveats, "coverage_note": COVERAGE_NOTE, "terms": rows, "conflicts": conflicts, "log": log.to_dict(),
     }, indent=2, ensure_ascii=False), encoding="utf-8")
     L = [f"# Search-term review — customer {snap.customer_id} — {snap.start} to {snap.end}", ""]
     if snap.synthetic:
         L += ["> **SYNTHETIC TEST DATA — NOT REAL.**", ""]
-    L += [f"Source: `{snap.path.name}` · {len(rows)} campaign × term rows · grain {' × '.join(grain)}", "",
-          f"> {COVERAGE_NOTE}", "",
+    L += [f"Source: `{snap.path.name}` · Currency: {currency} · {len(rows)} campaign × term rows · "
+          f"grain {' × '.join(grain)}", "", f"> {COVERAGE_NOTE}", "", "## Data caveats", "",
+          *([f"- {c}" for c in caveats] or ["- None from timing."]), "",
           "## Terms (by cost)", "", "Intent review is PENDING — weak performance is not the same as irrelevant intent.", "",
           "| Campaign | Search term | Brand class | Clicks | Cost | Conv. | Weak-performance flag | Intent review |",
           "|---|---|---|---|---|---|---|---|"]
     for r in rows:
         L.append(f"| {r['campaign_id']} | {r['search_term']} | {r['brand_class']} | {r['clicks']} | "
-                 f"{fmt(Decimal(r['cost']), 'money')} | {r['conversions'] or 'N/A'} | {r['weak_performance'] or '–'} | PENDING |")
+                 f"{fmt(Decimal(r['cost']), 'money', currency)} | {r['conversions'] or 'N/A'} | {r['weak_performance'] or '–'} | PENDING |")
     L += ["", "## Conflicting exclusions (approximate)", "",
           "Negatives that would block an active keyword's own text. Close variants and accents are not modelled.", ""]
     L += [f"- {c['negative_level']} negative \"{c['negative_text']}\" ({c['negative_match_type']}) blocks keyword "
@@ -194,6 +198,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--negatives", type=Path)
     ap.add_argument("--shared-negatives", type=Path)
     ap.add_argument("--campaign-shared-sets", type=Path)
+    ap.add_argument("--expected-currency")
+    ap.add_argument("--timezone", help="only if the snapshot lacks customer.time_zone")
+    ap.add_argument("--conversion-lag-days", type=int)
+    ap.add_argument("--now", help="ISO-8601 timestamp for partial-data checks (default: now; no offset = UTC)")
     ap.add_argument("--brand-lists", type=Path, default=ROOT / "config" / "brand_lists.json")
     ap.add_argument("--out", type=Path, default=ROOT / "outputs")
     args = ap.parse_args(argv)

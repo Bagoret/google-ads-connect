@@ -86,6 +86,16 @@ class WeeklyReviewE2E(unittest.TestCase):
         acts = json.loads((out / "actions.json").read_text())
         self.assertTrue([a for a in acts if a["entity_id"] == "9000000002" and "cost +50.0%" in a["finding"]])
 
+    def test_campaign_that_stopped_spending_is_reported(self):
+        out = self.run_ok("--previous", "2026-10-06:2026-10-12")
+        table = section((out / "report.md").read_text(), "By campaign")
+        self.assertIn("9000000004", table)
+        self.assertIn("-100.0%", table)
+        acts = json.loads((out / "actions.json").read_text())
+        stopped = [a for a in acts if a["entity_id"] == "9000000004" and "cost -100.0%" in a["finding"]]
+        self.assertTrue(stopped)
+        self.assertEqual(stopped[0]["priority"], "P2")  # judged on previous-period volume, not 0 clicks
+
     def test_non_equivalent_periods_suppress_deltas(self):
         out = self.run_ok("--previous", "2026-10-07:2026-10-12")
         report = (out / "report.md").read_text()

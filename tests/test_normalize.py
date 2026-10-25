@@ -50,6 +50,10 @@ class ShapeTest(unittest.TestCase):
     def test_flatten_camel_case(self):
         self.assertEqual(flatten_row({"metrics": {"costMicros": "1"}}), {"metrics.cost_micros": "1"})
 
+    def test_fastmcp_wrapped_result_accepted(self):
+        rows = extract_rows({"result": [{"campaign.id": 9000000001}]}, RunLog())
+        self.assertEqual(rows, [{"campaign.id": 9000000001}])
+
     def test_unknown_shape_stops(self):
         with self.assertRaises(StopAnalysis):
             extract_rows({"data": "something"}, RunLog())
