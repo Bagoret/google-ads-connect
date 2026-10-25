@@ -43,10 +43,9 @@ only for what is missing.
    - Relationship to the business: owner · employee · agency · freelancer · consultant · client · other.
    - Their Google Ads access level, if known: admin · standard · read_only · billing · email_only · none · unknown.
      Recommend **read_only** for analysis-only users (`docs/mcp-setup.md` › Adding other users).
-   - Preferred language for reports and replies: English (en) or French (fr).
    - What they will use it for: weekly-review · search-term-review · product-review · explore.
-3. Save: `python3 scripts/first_run.py save --relationship … --access … --language … --uses … [--name …]`.
-   From now on, reply in the saved language.
+3. Save: `python3 scripts/first_run.py save --relationship … --access … --uses … [--name …]`.
+   Reports, pages and replies are in English.
 4. Connection: `python3 scripts/check_connection.py` (and `--live --customer-id <ID>` once configured).
    Relay FAIL/WARN lines and their fixes. If `.mcp.json` is missing, point to `docs/mcp-setup.md`
    (done on their own machine, with their own Google login).
@@ -80,7 +79,7 @@ only for what is missing.
 - `first_run.py save` exits 2 on invalid values: ask again rather than guessing.
 
 ## Output schema
-- Part 1: `local/profile.json` (`display_name, relationship, access, language, uses, first_run_completed_at`)
+- Part 1: `local/profile.json` (`display_name, relationship, access, uses, first_run_completed_at`)
   and the connection check result.
 - Part 2: updated `context/*.md` and `config/*.json` (confirmed values only) and
   `outputs/onboarding/data-readiness.md` (Blockers · Optional context · MCP and data checklist ·

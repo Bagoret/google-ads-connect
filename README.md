@@ -62,8 +62,7 @@ python3 scripts/context_status.py               # what context is still missing
 The project checks itself at the start of every Claude Code session (a `SessionStart` hook runs
 `scripts/first_run.py --hook`). If something is missing, Claude runs the **onboarding** skill first:
 - **Part 1, person setup (every new person, once per machine):** relationship to the business (owner,
-  employee, agency, freelancer, consultant, client), Google Ads access level, report language (English
-  or French), intended use, and a connection check. Saved privately in `local/profile.json` (gitignored).
+  employee, agency, freelancer, consultant, client), Google Ads access level, intended use, and a connection check. Reports and pages are in English. Saved privately in `local/profile.json` (gitignored).
 - **Part 2, business setup (once per business, or while blockers remain):** brand, market, search
   language, stocked brands, accounts in scope, revenue definition, plus optional targets and calendar.
 

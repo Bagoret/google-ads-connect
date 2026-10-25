@@ -38,5 +38,5 @@ only while business blockers remain.
    never edit `config/execution.json`.
 10. `decisions/change-log.md` records only changes the user has **approved**,
     not suggestions. Unapproved ideas live in action registers.
-11. Write in the language in `local/profile.json` (default: clear English), or as the user asks.
+11. Write in clear English. Reports, dashboards and replies are English only.
 12. Cite source filename, date range, and entity IDs for every finding where available.
