@@ -64,6 +64,11 @@ Note every `UNKNOWN` field that limits interpretation.
     clearly labelled, but never add rows with invented metrics.
 12. **Evidence:** every finding cites snapshot filename, date ranges, and entity IDs (in the register).
 
+### Optional: visual dashboard
+Same flags as the review: `python3 scripts/dashboard.py --snapshot <file> --current <A:B> --previous <A:B> …`.
+It writes one self-contained HTML file (no network requests) to `outputs/dashboard_*/index.html` using the same
+engine, so its numbers match the report. Point the user to the file; do not paste its numbers by hand.
+
 ## Stop conditions
 - Script exit code 2 → report the STOP reason, what is needed to resolve it, and stop.
 - Snapshot query is not `campaign_daily`, or `inspect_snapshot.py` shows an unknown shape.
