@@ -1,0 +1,15 @@
+{
+ "_synthetic": "SYNTHETIC TEST DATA - NOT REAL",
+ "query_name": "campaign_daily",
+ "gaql": "SELECT ... FROM campaign WHERE segments.date BETWEEN '2026-10-01' AND '2026-10-02'",
+ "customer_id": "9000000000",
+ "start": "2026-10-01",
+ "end": "2026-10-02",
+ "fetched_at": "2026-10-25T09:00:00+00:00",
+ "server_info": {
+  "name": "fake-google-ads-mcp"
+ },
+ "tool_name": "search",
+ "payload_kind": "json_text",
+ "payload_text": "{\"results\": [{\"customer\": {\"currencyCode\": \"EUR\", \"timeZone\": \"Europe/Paris\"}, \"campaign\": {\"id\": \"9000000001\", \"name\": \"SYNTH_Campaign_A\", \"advertisingChannelType\": \"SEARCH\", \"status\": \"ENABLED\"}, \"segments\": {\"date\": \"2026-10-01\"}, \"metrics\": {\"impressions\": \"100\", \"clicks\": \"12\", \"costMicros\": \"12345678\", \"conversions\": 1.5, \"conversionsValue\": 45.25}}, {\"customer\": {\"currencyCode\": \"EUR\", \"timeZone\": \"Europe/Paris\"}, \"campaign\": {\"id\": \"9000000001\", \"name\": \"SYNTH_Campaign_A\", \"advertisingChannelType\": \"SEARCH\", \"status\": \"ENABLED\"}, \"segments\": {\"date\": \"2026-10-02\"}, \"metrics\": {\"impressions\": \"80\", \"clicks\": \"9\", \"costMicros\": \"9000000\", \"conversions\": 0.33, \"conversionsValue\": 10.1}}]}"
+}
