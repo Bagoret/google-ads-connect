@@ -1,0 +1,11 @@
+{
+  "_synthetic": "SYNTHETIC TEST DATA - NOT REAL",
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "[{\"campaign\": {\"id\": \"9000000001\", \"name\": \"SYNTH_Campaign_A\"}, \"segments\": {\"date\": \"2026-10-01\"}, \"metrics\": {\"clicks\": \"10\", \"costMicros\": \"5000000\", \"conversions\": 0.5}}]"
+      }
+    ]
+  }
+}
