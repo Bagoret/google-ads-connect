@@ -1,7 +1,7 @@
 # Google Ads Operating System — project instructions
 
-Local analysis system for Google Ads of a French-market beauty / K-beauty
-e-commerce business. Data source: **read-only Google Ads MCP (OAuth)**. Not connected yet.
+Local analysis system for Google Ads, reusable for any e-commerce business. The business
+it serves is described in `context/business.md`. Data source: **read-only Google Ads MCP (OAuth)**.
 
 ## Navigation
 - `context/` — business facts (source of truth; `UNKNOWN` = not supplied)
@@ -12,6 +12,11 @@ e-commerce business. Data source: **read-only Google Ads MCP (OAuth)**. Not conn
 - `data/raw/` — verbatim MCP/GAQL response snapshots, never modified · `data/processed/` — derived files
 - `queries/` — versioned GAQL query library (the only queries scripts run)
 - `outputs/` — reports and action registers · `decisions/` — approved changes, experiments
+
+## First run
+If the SessionStart hook reports a first run (no `context/` or no `local/profile.json`),
+run the `onboarding` skill before any other work: part 1 for every new person, part 2
+only while business blockers remain.
 
 ## Rules
 1. Before any analysis, load the relevant `context/` files. If a field needed
@@ -33,5 +38,5 @@ e-commerce business. Data source: **read-only Google Ads MCP (OAuth)**. Not conn
    never edit `config/execution.json`.
 10. `decisions/change-log.md` records only changes the user has **approved**,
     not suggestions. Unapproved ideas live in action registers.
-11. Write in clear English unless the user asks for French.
+11. Write in the language in `local/profile.json` (default: clear English), or as the user asks.
 12. Cite source filename, date range, and entity IDs for every finding where available.

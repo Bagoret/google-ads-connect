@@ -1,7 +1,8 @@
 # Google Ads Connect — a local PPC operating system
 
-A local, evidence-first system for analysing (and later managing) Google Ads for a French-market
-beauty / K-beauty e-commerce business. Claude Code runs the workflows; Python scripts do every
+A local, evidence-first system for analysing (and later managing) Google Ads for an e-commerce
+business. It is reusable: every copy starts from clean templates, and every new person gets a
+first-run setup. Claude Code runs the workflows; Python scripts do every
 calculation; data comes from Google's official **read-only Google Ads MCP server** over OAuth.
 
 **Status: Phase 1.** Read-only analysis engine, four skills, and the write-action groundwork are built
@@ -55,6 +56,20 @@ Requirements: Python ≥ 3.10. No packages to install for this repo.
 python3 -m unittest discover -s tests          # run the test suite
 python3 scripts/context_status.py               # what context is still missing
 ```
+
+### First run: every new person, any business
+The project checks itself at the start of every Claude Code session (a `SessionStart` hook runs
+`scripts/first_run.py --hook`). If something is missing, Claude runs the **onboarding** skill first:
+- **Part 1, person setup (every new person, once per machine):** relationship to the business (owner,
+  employee, agency, freelancer, consultant, client), Google Ads access level, report language (English
+  or French), intended use, and a connection check. Saved privately in `local/profile.json` (gitignored).
+- **Part 2, business setup (once per business, or while blockers remain):** brand, market, search
+  language, stocked brands, accounts in scope, revenue definition, plus optional targets and calendar.
+
+**Using it for another business:** make a new copy of the repo (e.g. GitHub "Use this template", or a
+fresh clone pushed to a new private repo), then run `python3 scripts/init_workspace.py --reset --yes` in
+that copy. It replaces `context/` and the per-business config with the empty versions in `templates/`.
+Never run `--reset` in the copy that holds your own business facts.
 
 ### Running onboarding (on your machine)
 1. Connect the MCP server with OAuth: follow [`docs/mcp-setup.md`](docs/mcp-setup.md). You configure

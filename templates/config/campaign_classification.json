@@ -1,0 +1,4 @@
+{
+  "_note": "Map campaign IDs to campaign_type and brand_category (marketplace | stocked | generic | competitor | mixed). Unlisted campaigns: type falls back to advertising_channel_type, brand to 'unclassified'.",
+  "campaigns": {}
+}

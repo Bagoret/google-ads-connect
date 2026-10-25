@@ -7,7 +7,7 @@ description: Weekly Google Ads performance review from read-only MCP data. Use w
 
 ## Purpose
 Turn a verbatim `campaign_daily` MCP snapshot into a validated performance report and a
-prioritised, evidence-backed action register for a French-market K-beauty e-commerce account.
+prioritised, evidence-backed action register for the business described in `context/business.md`.
 
 ## Hard rules
 - **No external account writes.** Never call any tool that creates, updates, removes, mutates,

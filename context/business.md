@@ -9,7 +9,9 @@
 |---|---|---|---|
 | Trading / marketplace brand name (the shop's own name) | UNKNOWN | | |
 | Website URL | UNKNOWN | | |
-| Primary country | UNKNOWN (expected: France — confirm) | | |
+| Industry / vertical (e.g. beauty, fashion, electronics) | UNKNOWN | | |
+| Primary country / market | UNKNOWN | | |
+| Main language(s) customers search in | UNKNOWN | | |
 | Other countries served / shipped to | UNKNOWN | | |
 | Account currency | UNKNOWN | | |
 | Account timezone | UNKNOWN | | |

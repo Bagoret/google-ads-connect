@@ -38,3 +38,6 @@ venv/
 Thumbs.db
 .idea/
 .vscode/
+
+# Per-person first-run profile (private to each machine)
+local/
