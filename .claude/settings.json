@@ -7,5 +7,17 @@
       "Edit(config/execution.json)",
       "Write(config/execution.json)"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/first_run.py\" --hook"
+          }
+        ]
+      }
+    ]
   }
 }

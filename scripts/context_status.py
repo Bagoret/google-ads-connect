@@ -20,6 +20,8 @@ BLOCKING = {
     ("business.md", "Account timezone"),
     ("business.md", "Trading / marketplace brand name"),
     ("business.md", "Stocked product brands"),
+    ("business.md", "Primary country / market"),
+    ("business.md", "Main language(s) customers search in"),
     ("account-map.md", "Customer ID"),
     ("account-map.md", "Account(s) in scope"),
     ("measurement.md", "Conversion actions"),

@@ -16,7 +16,7 @@
   in separate reporting segments. Blended ROAS hides the mix.
 - Marketplace-brand traffic usually has different economics (much of it might
   arrive anyway). Incrementality is a hypothesis to test, not an assumption.
-- Stocked-brand queries (e.g. a K-beauty brand name + product) are core demand
+- Stocked-brand queries (a stocked brand name + product) are core demand
   for a reseller; check brand-owner advertising restrictions before expanding.
 
 ## Match types and negatives
@@ -27,10 +27,11 @@
 - A negative can block a positive keyword: always check for conflicts.
 - Search-terms reports do not show every query (low-volume/privacy thresholds).
 
-## French-market specifics to check
-- Accented and unaccented spellings, singular/plural, French and English product
-  terms (e.g. "sérum" / "serum", "crème solaire" / "sunscreen").
-- Korean brand romanisation variants and common misspellings.
+## Market-specific checks
+- Spelling variants in the market's language: accents, singular/plural, local and English
+  product terms (French example: "sérum" / "serum", "crème solaire" / "sunscreen").
+- Brand-name variants: transliterations (e.g. romanised Korean or Japanese brands) and
+  common misspellings.
 
 ## Diagnosis order for a performance change
 1. Measurement (tracking changes, conversion action edits, consent changes).

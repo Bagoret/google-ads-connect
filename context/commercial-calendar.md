@@ -2,8 +2,8 @@
 
 > Promotions, seasonality, and stock events that affect period comparisons.
 > Only record events that were planned or confirmed. `UNKNOWN` = not supplied.
-> Generic market dates (e.g. Black Friday, French "soldes" periods) are listed
-> as *candidate* dates to confirm, not as facts about this business.
+> Common retail dates are listed as *candidate* dates to confirm, not as facts
+> about this business. Adapt the list to your market during onboarding.
 
 ## Confirmed promotions and events
 | Start | End | Event | Scope (sitewide / brand / category / SKUs) | Discount mechanic | Ads impact (budget change, assets, …) | Source |
@@ -15,16 +15,17 @@
 |---|---|---|
 | Peak months observed (with data source) | UNKNOWN | |
 | Low months observed (with data source) | UNKNOWN | |
-| Gift periods that matter (e.g. Christmas, Fête des mères) | UNKNOWN | |
+| Gift periods that matter (e.g. Christmas, Mother's Day) | UNKNOWN | |
 
 ## Candidate dates to confirm with the business
-These are common French retail moments. They are NOT confirmed participation.
+Common retail moments; replace or extend for your market (e.g. regulated sales periods such as
+France's soldes). They are NOT confirmed participation.
 | Moment | Participates? | Dates this year |
 |---|---|---|
-| Soldes d'hiver | UNKNOWN | UNKNOWN |
+| Winter sales period | UNKNOWN | UNKNOWN |
 | Saint-Valentin | UNKNOWN | UNKNOWN |
-| Fête des mères | UNKNOWN | UNKNOWN |
-| Soldes d'été | UNKNOWN | UNKNOWN |
+| Mother's Day (date varies by country) | UNKNOWN | UNKNOWN |
+| Summer sales period | UNKNOWN | UNKNOWN |
 | Black Friday / Cyber Monday | UNKNOWN | UNKNOWN |
 | Christmas gifting | UNKNOWN | UNKNOWN |
 | Singles' Day (11.11) | UNKNOWN | UNKNOWN |
