@@ -1,0 +1,25 @@
+{
+ "_synthetic": "SYNTHETIC TEST DATA - NOT REAL",
+ "_shape": "Mirrors googleads/google-ads-mcp v0.0.5: List[Dict] wrapped by FastMCP as {'result': [...]}",
+ "result": {
+  "structuredContent": {
+   "result": [
+    {
+     "campaign.id": 9000000001,
+     "campaign.name": "SYNTH_Campaign_A",
+     "segments.date": "2026-10-01",
+     "metrics.clicks": 10,
+     "metrics.cost_micros": 5000000,
+     "metrics.conversions": 0.5,
+     "customer.currency_code": "EUR"
+    }
+   ]
+  },
+  "content": [
+   {
+    "type": "text",
+    "text": "[{\"campaign.id\": 9000000001, \"campaign.name\": \"SYNTH_Campaign_A\", \"segments.date\": \"2026-10-01\", \"metrics.clicks\": 10, \"metrics.cost_micros\": 5000000, \"metrics.conversions\": 0.5, \"customer.currency_code\": \"EUR\"}]"
+   }
+  ]
+ }
+}

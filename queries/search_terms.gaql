@@ -1,0 +1,3 @@
+SELECT customer.currency_code, customer.time_zone, campaign.id, campaign.name, ad_group.id, search_term_view.search_term, search_term_view.status, segments.keyword.info.text, segments.keyword.info.match_type, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions, metrics.conversions_value
+FROM search_term_view
+WHERE segments.date BETWEEN '{start}' AND '{end}'

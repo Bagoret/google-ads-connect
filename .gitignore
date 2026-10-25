@@ -1,0 +1,40 @@
+# NOTE: .gitignore only stops files from being *committed*. It is not access
+# control: ignored files remain readable by anyone/anything with access to this
+# machine or workspace (including AI tools), and files committed before being
+# ignored stay in git history. See README "Security".
+
+# Account data and derived outputs
+data/raw/*
+data/processed/*
+outputs/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!outputs/.gitkeep
+
+# Credentials and local environment
+.env
+.env.*
+*.env
+credentials*.json
+client_secret*.json
+token*.json
+*service-account*.json
+google-ads.yaml
+google-ads.yml
+*.pem
+*.key
+.mcp.json
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

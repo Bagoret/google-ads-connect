@@ -1,0 +1,15 @@
+{
+ "_synthetic": "SYNTHETIC TEST DATA - NOT REAL",
+ "query_name": "keywords",
+ "gaql": "SELECT ... (keywords)",
+ "customer_id": "9000000000",
+ "start": null,
+ "end": null,
+ "fetched_at": "2026-10-25T09:00:00+00:00",
+ "server_info": {
+  "name": "fake-google-ads-mcp"
+ },
+ "tool_name": "search",
+ "payload_kind": "json_text",
+ "payload_text": "[{\"campaign.id\": \"9000000002\", \"campaign.name\": \"SYNTH_Search_B\", \"ad_group.id\": \"8000000001\", \"ad_group.name\": \"SYNTH_AG\", \"ad_group_criterion.criterion_id\": \"7000000001\", \"ad_group_criterion.keyword.text\": \"synthbrand serum\", \"ad_group_criterion.keyword.match_type\": \"PHRASE\", \"ad_group_criterion.status\": \"ENABLED\", \"ad_group_criterion.negative\": false}, {\"campaign.id\": \"9000000002\", \"campaign.name\": \"SYNTH_Search_B\", \"ad_group.id\": \"8000000001\", \"ad_group.name\": \"SYNTH_AG\", \"ad_group_criterion.criterion_id\": \"7000000002\", \"ad_group_criterion.keyword.text\": \"synthshop\", \"ad_group_criterion.keyword.match_type\": \"EXACT\", \"ad_group_criterion.status\": \"ENABLED\", \"ad_group_criterion.negative\": false}]"
+}

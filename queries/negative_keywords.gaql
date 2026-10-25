@@ -1,0 +1,3 @@
+SELECT campaign.id, campaign.name, campaign_criterion.criterion_id, campaign_criterion.keyword.text, campaign_criterion.keyword.match_type
+FROM campaign_criterion
+WHERE campaign_criterion.type = 'KEYWORD' AND campaign_criterion.negative = TRUE

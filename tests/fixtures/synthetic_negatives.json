@@ -1,0 +1,15 @@
+{
+ "_synthetic": "SYNTHETIC TEST DATA - NOT REAL",
+ "query_name": "negative_keywords",
+ "gaql": "SELECT ... (negative_keywords)",
+ "customer_id": "9000000000",
+ "start": null,
+ "end": null,
+ "fetched_at": "2026-10-25T09:00:00+00:00",
+ "server_info": {
+  "name": "fake-google-ads-mcp"
+ },
+ "tool_name": "search",
+ "payload_kind": "json_text",
+ "payload_text": "[{\"campaign.id\": \"9000000002\", \"campaign.name\": \"SYNTH_Search_B\", \"campaign_criterion.criterion_id\": \"6000000001\", \"campaign_criterion.keyword.text\": \"serum\", \"campaign_criterion.keyword.match_type\": \"PHRASE\"}, {\"campaign.id\": \"9000000002\", \"campaign.name\": \"SYNTH_Search_B\", \"campaign_criterion.criterion_id\": \"6000000002\", \"campaign_criterion.keyword.text\": \"free\", \"campaign_criterion.keyword.match_type\": \"BROAD\"}]"
+}

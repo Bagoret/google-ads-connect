@@ -1,0 +1,3 @@
+SELECT shared_set.id, shared_set.name, shared_criterion.criterion_id, shared_criterion.keyword.text, shared_criterion.keyword.match_type
+FROM shared_criterion
+WHERE shared_set.type = 'NEGATIVE_KEYWORDS'

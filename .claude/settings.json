@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "deny": [
+      "mcp__GoMarble_AI",
+      "Edit(data/raw/**)",
+      "Write(data/raw/**)",
+      "Edit(config/execution.json)",
+      "Write(config/execution.json)"
+    ]
+  }
+}

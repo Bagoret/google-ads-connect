@@ -1,0 +1,7 @@
+{
+  "_synthetic": "SYNTHETIC TEST DATA - NOT REAL",
+  "result": {
+    "isError": true,
+    "content": [{"type": "text", "text": "SYNTHETIC PERMISSION_DENIED"}]
+  }
+}

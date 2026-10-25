@@ -1,0 +1,2 @@
+SELECT customer.id, customer.descriptive_name, customer.currency_code, customer.time_zone, customer.auto_tagging_enabled
+FROM customer

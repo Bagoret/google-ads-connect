@@ -1,0 +1,41 @@
+[
+  {
+    "priority": "P2",
+    "entity_type": "account",
+    "entity_id": "9000000000",
+    "finding": "Material change vs 2026-10-06 to 2026-10-12: CPA +36.6%, CVR -26.8%",
+    "supporting_metrics": "current 2026-10-13 to 2026-10-19: cost=273.00 EUR, clicks=595, conv=12.81, value=507.50 EUR, CPA=21.31 EUR, ROAS=1.86, CVR=2.15%; previous 2026-10-06 to 2026-10-12: cost=273.00 EUR, clicks=595, conv=17.50, value=630.00 EUR, CPA=15.60 EUR, ROAS=2.31, CVR=2.94%; source=synthetic_weekly_two_weeks.json",
+    "proposed_action": "Investigate drivers (change history, budget limits, auction metrics, promotions, stock, landing pages) before changing bids or budgets",
+    "rationale": "Change exceeds the configured materiality threshold (20%). Cause not determined from this data.",
+    "confidence": "medium",
+    "risk": "Reacting to noise or to conversions not yet attributed.",
+    "approval_required": "yes",
+    "validation_plan": "Identify the driver from change history and the commercial calendar; re-run next week to see if it persists."
+  },
+  {
+    "priority": "P2",
+    "entity_type": "campaign",
+    "entity_id": "9000000002",
+    "finding": "Material change vs 2026-10-06 to 2026-10-12: cost +50.0%, CPA +127.3%, ROAS -58.3%, CVR -56.0%",
+    "supporting_metrics": "current 2026-10-13 to 2026-10-19: cost=105.00 EUR, clicks=210, conv=2.31, value=87.50 EUR, CPA=45.45 EUR, ROAS=0.83, CVR=1.10%; previous 2026-10-06 to 2026-10-12: cost=70.00 EUR, clicks=140, conv=3.50, value=140.00 EUR, CPA=20.00 EUR, ROAS=2.00, CVR=2.50%; source=synthetic_weekly_two_weeks.json",
+    "proposed_action": "Investigate drivers (change history, budget limits, auction metrics, promotions, stock, landing pages) before changing bids or budgets",
+    "rationale": "Change exceeds the configured materiality threshold (20%). Cause not determined from this data.",
+    "confidence": "medium",
+    "risk": "Reacting to noise or to conversions not yet attributed.",
+    "approval_required": "yes",
+    "validation_plan": "Identify the driver from change history and the commercial calendar; re-run next week to see if it persists."
+  },
+  {
+    "priority": "P2",
+    "entity_type": "campaign",
+    "entity_id": "9000000004",
+    "finding": "Material change vs 2026-10-06 to 2026-10-12: cost -100.0%",
+    "supporting_metrics": "current 2026-10-13 to 2026-10-19: cost=0.00 EUR, clicks=0, conv=0.00, value=0.00 EUR, CPA=N/A, ROAS=N/A, CVR=N/A; previous 2026-10-06 to 2026-10-12: cost=35.00 EUR, clicks=70, conv=3.50, value=70.00 EUR, CPA=10.00 EUR, ROAS=2.00, CVR=5.00%; source=synthetic_weekly_two_weeks.json",
+    "proposed_action": "Investigate drivers (change history, budget limits, auction metrics, promotions, stock, landing pages) before changing bids or budgets",
+    "rationale": "Change exceeds the configured materiality threshold (20%). Cause not determined from this data.",
+    "confidence": "medium",
+    "risk": "Reacting to noise or to conversions not yet attributed.",
+    "approval_required": "yes",
+    "validation_plan": "Identify the driver from change history and the commercial calendar; re-run next week to see if it persists."
+  }
+]
