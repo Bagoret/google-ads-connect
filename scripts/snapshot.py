@@ -32,6 +32,9 @@ STRUCTURED_PARAMS = {"customer_id", "fields", "resource", "conditions"}
 
 def parse_gaql(gaql: str) -> dict:
     """Split a single-resource GAQL query into fields / resource / conditions (AND-joined)."""
+    if re.search(r"\b(ORDER\s+BY|LIMIT|PARAMETERS)\b", gaql, re.I):
+        raise StopAnalysis("ORDER BY / LIMIT / PARAMETERS are not supported in library queries "
+                           "(the MCP search tool takes them as separate arguments)")
     m = re.fullmatch(r"\s*SELECT\s+(.+?)\s+FROM\s+(\w+)(?:\s+WHERE\s+(.+?))?\s*", gaql, re.I | re.S)
     if not m:
         raise StopAnalysis(f"cannot parse GAQL (only SELECT … FROM … [WHERE …] is supported): {gaql[:200]}")
@@ -72,14 +75,23 @@ def render_query(path: Path, start: date | None, end: date | None) -> str:
 
 
 def write_snapshot(path: Path, envelope: dict) -> None:
+    text = json.dumps(envelope, ensure_ascii=False, indent=1, default=_json_default)  # fail before creating the file
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "x", encoding="utf-8") as fh:  # exclusive create: never overwrite raw data
-        json.dump(envelope, fh, ensure_ascii=False, indent=1, default=_json_default)
+        fh.write(text)
+
+
+def _snapshot_path(raw_dir: Path, stem: str) -> Path:
+    path, n = raw_dir / f"{stem}.json", 1
+    while path.exists():
+        n += 1
+        path = raw_dir / f"{stem}-{n}.json"
+    return path
 
 
 def _json_default(obj):
-    # Only structuredContent payloads reach here with Decimals (parsed from JSON floats
-    # on the wire), so float() restores the same numeric value the server sent.
+    # Readable copy only: Decimals in the structured payload are written as floats, which can drop digits
+    # beyond ~17. Loaders read the exact numbers from "response_text" (the server's raw reply) instead.
     if isinstance(obj, Decimal):
         return int(obj) if obj == obj.to_integral_value() else float(obj)
     raise TypeError(type(obj))
@@ -88,12 +100,17 @@ def _json_default(obj):
 def load_server_config(path: Path) -> tuple[list[str], dict]:
     if not path.exists():
         raise StopAnalysis(f"{path} not found; copy .mcp.json.example and configure it (see docs/mcp-setup.md)")
-    server = json.loads(path.read_text())["mcpServers"]["google-ads-mcp"]
-    env = {k: _expand(str(v), k) for k, v in server.get("env", {}).items()}
+    try:
+        server = json.loads(path.read_text(encoding="utf-8"))["mcpServers"]["google-ads-mcp"]
+        command, args, raw_env = server["command"], server.get("args", []), server.get("env", {})
+    except (ValueError, KeyError, TypeError):
+        raise StopAnalysis(f"{path} is not valid: it needs mcpServers -> google-ads-mcp -> command "
+                           "(compare with .mcp.json.example)")
+    env = {k: _expand(str(v), k) for k, v in raw_env.items()}
     unset = [k for k, v in env.items() if v.startswith(("YOUR_", "PATH_TO_"))]
     if unset:
         raise StopAnalysis(f".mcp.json still has placeholder values for: {', '.join(unset)}")
-    return [server["command"], *server.get("args", [])], env
+    return [command, *args], env
 
 
 def _expand(value: str, key: str) -> str:
@@ -118,7 +135,7 @@ def run_snapshot(query: str, customer_id: str, start: date | None, end: date | N
     fetched = datetime.now(timezone.utc)
     stamp = fetched.strftime("%Y%m%dT%H%M%S")
     span = f"{start}_{end}" if start else "nodates"
-    path = raw_dir / f"{query}_{customer_id}_{span}_{stamp}.json"
+    path = _snapshot_path(raw_dir, f"{query}_{customer_id}_{span}_{stamp}")
     envelope = {
         "query_name": query, "gaql": gaql, "customer_id": customer_id,
         "start": start.isoformat() if start else None, "end": end.isoformat() if end else None,
@@ -135,6 +152,7 @@ def run_snapshot(query: str, customer_id: str, start: date | None, end: date | N
             arguments = build_search_args(tools[tool].get("inputSchema", {}), customer_id, gaql)
             envelope.update(tool_name=tool, tool_arguments=arguments)
             result = client.call_tool(tool, arguments)
+            response_text = client.last_response_text
     except McpError as exc:
         # Save what happened (message only — server stderr may hold request details), then stop.
         envelope.update(payload_kind="error", payload={"protocol_error": str(exc)})
@@ -151,7 +169,8 @@ def run_snapshot(query: str, customer_id: str, start: date | None, end: date | N
         text = next(c["text"] for c in result["content"] if c.get("type") == "text")
         envelope.update(payload_kind=kind, payload_text=text)
     else:
-        envelope.update(payload_kind=kind, payload=payload)
+        # Exact copy of the server's reply; "payload" is a readable but float-rounded view of it.
+        envelope.update(payload_kind=kind, payload=payload, response_text=response_text)
     write_snapshot(path, envelope)
     return path
 

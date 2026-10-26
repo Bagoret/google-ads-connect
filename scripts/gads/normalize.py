@@ -38,6 +38,8 @@ def load_snapshot(path: Path) -> Snapshot:
         raise StopAnalysis(f"snapshot {Path(path).name} holds an MCP error result, not data")
     if kind == "json_text":
         payload = json.loads(env["payload_text"], parse_float=Decimal)
+    elif kind == "structured" and env.get("response_text"):  # exact numbers from the raw reply
+        payload = json.loads(env["response_text"], parse_float=Decimal)["result"]["structuredContent"]
     elif kind == "structured":
         payload = env["payload"]
     else:

@@ -1,0 +1,5 @@
+{
+ "_synthetic": "SYNTHETIC TEST DATA - NOT REAL",
+ "_shape": "result_raw is sent byte-for-byte, so number formatting survives (precision test)",
+ "result_raw": "{\"structuredContent\": {\"result\": [{\"campaign.id\": 9000000001, \"campaign.name\": \"SYNTH_Precise\", \"segments.date\": \"2026-10-01\", \"metrics.clicks\": 10, \"metrics.cost_micros\": 5000000, \"metrics.conversions\": 0.12345678901234567890, \"metrics.conversions_value\": 2.0, \"customer.currency_code\": \"EUR\"}]}, \"content\": [{\"type\": \"text\", \"text\": \"see structuredContent\"}]}"
+}
