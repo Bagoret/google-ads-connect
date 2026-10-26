@@ -1,0 +1,27 @@
+{
+  "id": "CR-20261026-085820-8869",
+  "customer_id": "9000000000",
+  "operation": "add_campaign_negative_keyword",
+  "params": {
+    "campaign_id": 9000000002,
+    "text": "gratuit",
+    "match_type": "PHRASE"
+  },
+  "rationale": "SYNTHETIC: irrelevant intent (free samples)",
+  "evidence": "search-term review 2026-10-13..19",
+  "status": "approved",
+  "approval": {
+    "approver": "SYNTH Owner",
+    "at": "2026-10-26T08:58:20.271102+00:00",
+    "fingerprint": "79ca8aa524eb5083507a1823abcf48eba0c3487b9f3b0e1521dd8c789c0b1342"
+  },
+  "history": [
+    {
+      "from": "proposed",
+      "to": "approved",
+      "actor": "SYNTH Owner",
+      "at": "2026-10-26T08:58:20.271102+00:00",
+      "note": ""
+    }
+  ]
+}

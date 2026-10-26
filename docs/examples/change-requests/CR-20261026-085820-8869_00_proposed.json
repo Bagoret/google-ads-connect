@@ -1,0 +1,15 @@
+{
+  "id": "CR-20261026-085820-8869",
+  "customer_id": "9000000000",
+  "operation": "add_campaign_negative_keyword",
+  "params": {
+    "campaign_id": 9000000002,
+    "text": "gratuit",
+    "match_type": "PHRASE"
+  },
+  "rationale": "SYNTHETIC: irrelevant intent (free samples)",
+  "evidence": "search-term review 2026-10-13..19",
+  "status": "proposed",
+  "approval": null,
+  "history": []
+}

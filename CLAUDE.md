@@ -37,6 +37,7 @@ only while business blockers remain.
    Future writes go only through `scripts/gads/changes.py` (see `docs/write-path.md`);
    never edit `config/execution.json`.
 10. `decisions/change-log.md` records only changes the user has **approved**,
-    not suggestions. Unapproved ideas live in action registers.
+    not suggestions. Unapproved ideas live in action registers. Run
+    `scripts/change_requests.py approve` only after the user explicitly approves that request ID and fingerprint.
 11. Write in clear English. Reports, dashboards and replies are English only.
 12. Cite source filename, date range, and entity IDs for every finding where available.

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Change requests</title><style>
+:root{color-scheme:light;--page:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--muted:#898781;
+--grid:#e1e0d9;--axis:#c3c2b7;--series:#2a78d6;--band:rgba(42,120,214,.06);--border:rgba(11,11,11,.10);
+--good:#006300;--bad:#d03b3b;--critical:#d03b3b;--serious:#ec835a;--warning:#fab219}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){color-scheme:dark;--page:#0d0d0d;--surface:#1a1a19;
+--ink:#f0efec;--ink-2:#c3c2b7;--grid:#2c2c2a;--axis:#383835;--series:#3987e5;--band:rgba(57,135,229,.10);
+--border:rgba(255,255,255,.10);--good:#0ca30c;--bad:#e66767}}
+:root[data-theme="dark"]{color-scheme:dark;--page:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink-2:#c3c2b7;--grid:#2c2c2a;
+--axis:#383835;--series:#3987e5;--band:rgba(57,135,229,.10);--border:rgba(255,255,255,.10);--good:#0ca30c;--bad:#e66767}
+*{box-sizing:border-box}body{margin:0;background:var(--page);color:var(--ink);
+font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1120px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:15px;margin:0 0 12px}
+.sub,.muted{color:var(--ink-2)}.small{font-size:12px}.mono{font-variant-numeric:tabular-nums}
+.banner{border:1px solid var(--warning);background:var(--surface);padding:8px 12px;border-radius:8px;margin:12px 0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:16px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:16px}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.tile-label{color:var(--ink-2);font-size:13px}.tile-value{font-size:24px;font-weight:600;margin:2px 0}
+.tile-prev{color:var(--muted);font-size:12px}
+.delta{font-size:13px;font-weight:600}.delta.good{color:var(--good)}.delta.bad{color:var(--bad)}
+.delta.neutral{color:var(--ink-2)}.delta.muted{color:var(--muted);font-weight:400}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.chart-wrap{overflow-x:auto}.chart.bars{max-width:640px}.chart{width:100%;min-width:440px;height:auto;display:block;overflow:visible}
+.chart .grid{stroke:var(--grid);stroke-width:1}.chart .axis{stroke:var(--axis);stroke-width:1}
+.chart .tick,.chart .axis-label{fill:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.chart .cat,.chart .value,.chart .end-label{fill:var(--ink-2);font-size:13px}
+.chart .band{fill:var(--band)}.chart .line{fill:none;stroke:var(--series);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart .area{fill:var(--series);opacity:.10}.chart .dot{fill:var(--series);stroke:var(--surface);stroke-width:2}
+.chart .bar{fill:var(--series)}.chart .bar:hover,.chart .bar:focus{opacity:.8;outline:none}
+.chart .crosshair{stroke:var(--axis);stroke-width:1}.chart .hit{fill:transparent;outline:none}
+.spark{width:80px;height:24px}.spark-base{fill:none;stroke:var(--muted);stroke-width:1.5}
+.spark-cur{fill:none;stroke:var(--series);stroke-width:2}
+.table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:8px 6px;border-bottom:1px solid var(--grid);text-align:left;white-space:nowrap}td.name{white-space:normal;min-width:140px}
+th{color:var(--ink-2);font-weight:600}.num{text-align:right;font-variant-numeric:tabular-nums}
+.badge{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;color:#0b0b0b;white-space:nowrap}
+.badge.neutral{background:var(--grid);color:var(--ink)}.badge.good{background:#0ca30c;color:#fff}.badge.critical{background:var(--critical);color:#fff}.badge.serious{background:var(--serious)}.badge.warning{background:var(--warning)}
+.issues{list-style:none;margin:0;padding:0}.issue{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--grid)}
+.requests{list-style:none;margin:0;padding:0}.request{padding:12px 0;border-bottom:1px solid var(--grid)}.req-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:4px}.issue-title{font-weight:600}.issue-action{color:var(--ink-2)}
+details{margin-top:8px}summary{cursor:pointer;color:var(--ink-2);font-size:13px}
+.tooltip{position:fixed;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--border);
+border-radius:8px;padding:6px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.12);display:none;z-index:10}
+.tooltip strong{display:block;font-size:14px}
+ul.caveats{margin:0;padding-left:18px}
+</style></head>
+<body><main>
+<h1>Change requests</h1>
+<div class="sub">Status of proposed account changes · nothing here changes an account</div>
+
+<div class="banner">Writes are disabled (config/execution.json). Approved requests are recorded in decisions/change-log.md; nothing is executed in any account.</div>
+<section class="kpis" aria-label="Requests by status"><div class="tile"><div class="tile-label">Proposed</div><div class="tile-value">1</div></div><div class="tile"><div class="tile-label">Approved</div><div class="tile-value">1</div></div><div class="tile"><div class="tile-label">Rejected</div><div class="tile-value">1</div></div><div class="tile"><div class="tile-label">Executed</div><div class="tile-value">0</div></div><div class="tile"><div class="tile-label">Verified</div><div class="tile-value">0</div></div><div class="tile"><div class="tile-label">Rolled back</div><div class="tile-value">0</div></div></section>
+<section class="card"><h2>Change requests</h2>
+<p class="muted small">An approval is tied to a fingerprint of the exact change; editing a request after approval
+voids it. Each revision is a separate file in outputs/change-requests/.</p><ul class="requests"><li class="request" data-request="CR-20261026-085820-fc11"><div class="req-head"><span class="badge neutral">○ Proposed</span><span class="mono">CR-20261026-085820-fc11</span></div><div class="issue-title">pause_keyword: pause</div><div class="issue-action">SYNTHETIC: 0 conversions on 35 clicks for 14 days</div><div class="muted small">Evidence: docs/examples/search-terms_*/review.md</div><div class="muted small">Account 9000000000 · ad_group_id=8000000001, criterion_id=7000000002 · Last change – · Fingerprint <span class="mono" title="25a9748a3268c5069c83804e4bf9cf9772bd4cecdc358fda1e57719c3b10517c">25a9748a3268…</span></div><details><summary>History (0)</summary><ul class="caveats"><li>No decisions yet.</li></ul></details></li><li class="request" data-request="CR-20261026-085820-8869"><div class="req-head"><span class="badge good">✓ Approved</span><span class="mono">CR-20261026-085820-8869</span></div><div class="issue-title">add_campaign_negative_keyword: add negative &quot;gratuit&quot; (PHRASE)</div><div class="issue-action">SYNTHETIC: irrelevant intent (free samples)</div><div class="muted small">Evidence: search-term review 2026-10-13..19</div><div class="muted small">Account 9000000000 · campaign_id=9000000002 · Approved by SYNTH Owner · Last change 2026-10-26T08:58 UTC · Fingerprint <span class="mono" title="79ca8aa524eb5083507a1823abcf48eba0c3487b9f3b0e1521dd8c789c0b1342">79ca8aa524eb…</span></div><details><summary>History (1)</summary><ul class="caveats"><li>2026-10-26T08:58 · proposed → approved by SYNTH Owner</li></ul></details></li><li class="request" data-request="CR-20261026-085820-f41d"><div class="req-head"><span class="badge neutral">✕ Rejected</span><span class="mono">CR-20261026-085820-f41d</span></div><div class="issue-title">set_campaign_budget: 20000000 → 25000000 micros</div><div class="issue-action">SYNTHETIC: budget-limited, ROAS above target</div><div class="muted small">Evidence: weekly review 2026-10-13..19</div><div class="muted small">Account 9000000000 · campaign_id=9000000001, budget_id=5000000001 · Last change 2026-10-26T08:58 UTC · Fingerprint <span class="mono" title="47b9a7ef2fd33acf1fe2c12bea788c5809c55094254892274d8f5e0cc5c98bd4">47b9a7ef2fd3…</span></div><details><summary>History (1)</summary><ul class="caveats"><li>2026-10-26T08:58 · proposed → rejected by SYNTH Owner — wait for next week&#x27;s data</li></ul></details></li></ul></section>
+<p class="muted small">3 request(s) · generated 2026-10-26T08:58:59+00:00</p>
+</main>
+<script type="application/json" id="dash-data">{}</script>
+<script>
+(function(){
+  var data = JSON.parse(document.getElementById('dash-data').textContent);
+  var tip = document.createElement('div'); tip.className = 'tooltip'; document.body.appendChild(tip);
+  function show(x, y, value, label){
+    tip.textContent = '';
+    var s = document.createElement('strong'); s.textContent = value; tip.appendChild(s);
+    tip.appendChild(document.createTextNode(label));
+    tip.style.display = 'block';
+    var w = tip.offsetWidth, h = tip.offsetHeight;
+    tip.style.left = Math.max(4, Math.min(x + 14, window.innerWidth - w - 4)) + 'px';
+    tip.style.top = Math.max(4, Math.min(y + 14, window.innerHeight - h - 4)) + 'px';
+  }
+  function hide(){ tip.style.display = 'none'; }
+  document.querySelectorAll('svg.chart[data-key]').forEach(function(svg){
+    var key = svg.getAttribute('data-key'), hit = svg.querySelector('.hit'), cross = svg.querySelector('.crosshair');
+    var n = +hit.getAttribute('data-n'), l = +hit.getAttribute('data-l'), w = +hit.getAttribute('data-w');
+    function at(clientX){
+      var pt = svg.createSVGPoint(); pt.x = clientX; pt.y = 0;
+      var x = pt.matrixTransform(svg.getScreenCTM().inverse()).x;
+      return Math.max(0, Math.min(n - 1, Math.round((x - l) / w * (n - 1))));
+    }
+    function move(i, cx, cy){
+      var d = data.daily[i], xv = l + w * i / Math.max(n - 1, 1);
+      cross.setAttribute('x1', xv); cross.setAttribute('x2', xv); cross.setAttribute('visibility', 'visible');
+      var v = d[key] === null ? 'N/A' : Number(d[key]).toFixed(2) + ' ' + data.currency;
+      show(cx, cy, v, d.date + ' · ' + d.period + ' period');
+    }
+    hit.addEventListener('pointermove', function(e){ move(at(e.clientX), e.clientX, e.clientY); });
+    hit.addEventListener('pointerleave', function(){ cross.setAttribute('visibility', 'hidden'); hide(); });
+    var idx = n - 1;
+    hit.addEventListener('focus', function(){ var r = hit.getBoundingClientRect(); move(idx, r.left + r.width / 2, r.top); });
+    hit.addEventListener('blur', function(){ cross.setAttribute('visibility', 'hidden'); hide(); });
+    hit.addEventListener('keydown', function(e){
+      if (e.key === 'ArrowLeft') idx = Math.max(0, idx - 1); else if (e.key === 'ArrowRight') idx = Math.min(n - 1, idx + 1); else return;
+      var r = hit.getBoundingClientRect(); move(idx, r.left + r.width * idx / Math.max(n - 1, 1), r.top); e.preventDefault();
+    });
+  });
+  document.querySelectorAll('.bar[data-tip]').forEach(function(bar){
+    function on(e){ var r = bar.getBoundingClientRect(); var t = bar.getAttribute('data-tip').split(': ');
+      show(e.clientX || r.right, e.clientY || r.top, t.slice(1).join(': '), t[0]); }
+    bar.addEventListener('pointermove', on); bar.addEventListener('focus', on);
+    bar.addEventListener('pointerleave', hide); bar.addEventListener('blur', hide);
+  });
+})();
+</script>
+</body></html>
