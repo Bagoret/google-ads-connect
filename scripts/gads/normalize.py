@@ -159,11 +159,13 @@ def detect_grain(records: list[dict]) -> list[str]:
 
 
 def records_from_snapshot(path: Path, required: set[str], log: RunLog,
-                          expected_query: str | None = None) -> tuple[Snapshot, list[dict]]:
+                          expected_query: str | None = None, dated: bool = False) -> tuple[Snapshot, list[dict]]:
     """Load a snapshot and return its typed records (shared by all review scripts)."""
     snap = load_snapshot(path)
     if expected_query and snap.query_name != expected_query:
         raise StopAnalysis(f"{Path(path).name} is a {snap.query_name} snapshot; expected {expected_query}")
+    if dated and (snap.start is None or snap.end is None):
+        raise StopAnalysis(f"{Path(path).name} has no start/end date range; re-fetch it with scripts/snapshot.py")
     rows = [flatten_row(r) for r in extract_rows(snap.payload, log)]
     return snap, apply_field_map(rows, load_field_map(), required, log)
 

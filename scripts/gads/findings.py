@@ -6,6 +6,7 @@ from dataclasses import asdict, dataclass
 from decimal import Decimal
 
 from .compare import Period, pct_change
+from .logbook import StopAnalysis
 from .metrics import Totals, derive, fmt
 
 ACTION_COLUMNS = ("priority", "entity_type", "entity_id", "finding", "supporting_metrics", "proposed_action",
@@ -27,7 +28,8 @@ class Action:
     validation_plan: str
 
     def as_dict(self) -> dict:
-        return {k: asdict(self)[k] for k in ACTION_COLUMNS}
+        data = asdict(self)
+        return {k: data[k] for k in ACTION_COLUMNS}
 
 
 @dataclass
@@ -44,6 +46,23 @@ class ReviewContext:
     source_label: str
     customer_id: str = ""
     currency: str = ""
+
+
+REQUIRED_THRESHOLDS = ("min_clicks_for_ratio",)
+OPTIONAL_THRESHOLDS = ("material_pct_change", "min_spend_zero_conv", "tracking_drop_pct",
+                       "tracking_click_stability_pct")
+
+
+def check_thresholds(thresholds: dict) -> dict:
+    """Required values must be non-negative numbers; optional ones may also be null (rule disabled)."""
+    for key in REQUIRED_THRESHOLDS + OPTIONAL_THRESHOLDS:
+        value = thresholds.get(key)
+        if value is None and key in OPTIONAL_THRESHOLDS:
+            continue
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+            raise StopAnalysis(f"config/review_thresholds.json: {key} must be a non-negative number"
+                               + (" or null" if key in OPTIONAL_THRESHOLDS else ""))
+    return thresholds
 
 
 def _summary(t: Totals, period: Period, cur: str) -> str:
@@ -88,11 +107,15 @@ def _rule_tracking(ctx: ReviewContext) -> list[Action]:
     cur, prev = ctx.account["current"], ctx.account["previous"]
     if not prev.conversions or cur.conversions is None:
         return []
+    drop_limit = ctx.thresholds.get("tracking_drop_pct")
+    stability = ctx.thresholds.get("tracking_click_stability_pct")
+    if drop_limit is None or stability is None:
+        return []
     drop = -pct_change(cur.conversions, prev.conversions)
     click_change = pct_change(Decimal(cur.clicks), Decimal(prev.clicks))
-    if drop < ctx.thresholds["tracking_drop_pct"] or click_change is None:
+    if drop < drop_limit or click_change is None:
         return []
-    if abs(click_change) > ctx.thresholds["tracking_click_stability_pct"]:
+    if abs(click_change) > stability:
         return []
     act = _action(
         ctx, "P1", "account", ctx.customer_id or "account", ctx.account,
@@ -104,7 +127,7 @@ def _rule_tracking(ctx: ReviewContext) -> list[Action]:
         "Compare Google Ads conversions with back-end orders for the same days; check conversion action "
         "status and recent tag/site changes; re-run this review after the check.",
         cur.clicks)
-    act.priority = "P1"
+    act.priority = "P1"  # deliberate: a possible tracking failure outranks everything, even on low volume
     return [act]
 
 
@@ -113,9 +136,10 @@ def _rule_zero_conv(ctx: ReviewContext) -> list[Action]:
     if limit is None:
         return []
     out = []
+    min_cost = Decimal(str(limit))
     for cid, totals in ctx.campaigns.items():
         cur = totals["current"]
-        if cur.conversions is not None and cur.conversions == 0 and cur.cost >= Decimal(str(limit)):
+        if cur.conversions is not None and cur.conversions == 0 and cur.cost >= min_cost:
             out.append(_action(
                 ctx, "P2", "campaign", cid, totals,
                 f"Spent {fmt(cur.cost, 'money', ctx.currency)} with 0 conversions in {ctx.current}",
@@ -155,7 +179,7 @@ def _comparison_volume(totals: dict[str, Totals]) -> int:
 
 
 def _rule_material(ctx: ReviewContext) -> list[Action]:
-    if not (ctx.previous and ctx.equivalent):
+    if not (ctx.previous and ctx.equivalent) or ctx.thresholds.get("material_pct_change") is None:
         return []
     entities = [("account", ctx.customer_id or "account", ctx.account)]
     entities += [("campaign", cid, t) for cid, t in ctx.campaigns.items()]
@@ -183,12 +207,14 @@ def _rule_targets(ctx: ReviewContext) -> list[Action]:
         return []
     out = []
     min_clicks = ctx.thresholds["min_clicks_for_ratio"]
+    target_roas = Decimal(str(ctx.targets["roas"])) if "roas" in ctx.targets else None
+    target_cpa = Decimal(str(ctx.targets["cpa"])) if "cpa" in ctx.targets else None
     for cid, totals in ctx.campaigns.items():
         cur = totals["current"]
         if cur.clicks < min_clicks:
             continue
         d = derive(cur)
-        if "roas" in ctx.targets and d["roas"] is not None and d["roas"] < Decimal(str(ctx.targets["roas"])):
+        if target_roas is not None and d["roas"] is not None and d["roas"] < target_roas:
             out.append(_action(
                 ctx, "P2", "campaign", cid, totals,
                 f"ROAS {fmt(d['roas'], 'ratio')} is below supplied target ROAS {ctx.targets['roas']}",
@@ -197,7 +223,7 @@ def _rule_targets(ctx: ReviewContext) -> list[Action]:
                 "The target may not apply to this campaign type or brand category.",
                 "Re-check ROAS after the conversion delay window over an equivalent period.",
                 cur.clicks))
-        if "cpa" in ctx.targets and d["cpa"] is not None and d["cpa"] > Decimal(str(ctx.targets["cpa"])):
+        if target_cpa is not None and d["cpa"] is not None and d["cpa"] > target_cpa:
             out.append(_action(
                 ctx, "P2", "campaign", cid, totals,
                 f"CPA {fmt(d['cpa'], 'money', ctx.currency)} is above supplied target CPA {ctx.targets['cpa']}",

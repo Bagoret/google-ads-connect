@@ -31,7 +31,8 @@ constraints, promotions), `knowledge/shopping-principles.md`, `context/account-m
 ## Procedure
 1. Snapshot `product_daily` (read-only); run `scripts/inspect_snapshot.py`. Grain must be
    `campaign_id × item_id × date`.
-2. Run `python3 scripts/product_review.py --products <snap> [--supplement <file>] [--expected-currency EUR]`.
+2. Run `python3 scripts/product_review.py --products <snap> [--supplement <file>] [--expected-currency EUR]`,
+   adding `--conversion-lag-days N` and `--timezone TZ` only when they are recorded (not UNKNOWN) in `context/`.
 3. **Identifier validation:** IDs are normalised (strip + casefold) on both sides; the rule is logged.
    Review the join check: items with performance but no supplement row, and the reverse. A large
    mismatch means the ID formats differ — stop and ask before interpreting.

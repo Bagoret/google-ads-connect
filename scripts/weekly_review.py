@@ -15,13 +15,13 @@ import argparse
 import json
 import sys
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from gads.compare import Period, equivalence  # noqa: E402
-from gads.findings import ReviewContext, generate_actions  # noqa: E402
+from gads.findings import ReviewContext, check_thresholds, generate_actions  # noqa: E402
 from gads.logbook import RunLog, StopAnalysis  # noqa: E402
 from gads.metrics import Totals, aggregate, group_by  # noqa: E402
 from gads.normalize import apply_field_map, detect_grain, extract_rows, flatten_row, load_field_map, load_snapshot  # noqa: E402
@@ -54,12 +54,32 @@ def _campaign_meta(records: list[dict], classification: dict) -> dict[str, dict]
     return meta
 
 
-def _segment(periods: dict[str, list[dict]], meta: dict, field: str) -> dict[str, dict]:
+def _by_label(periods: dict[str, list[dict]], key) -> dict[str, dict]:
+    """Totals per group and period label; a group with previous rows but none now (it stopped serving, and
+    GAQL omits zero days) gets zero current totals so its -100% shows instead of vanishing."""
     out: dict[str, dict] = {}
     for label, recs in periods.items():
-        for name, totals in group_by([{**r, "_seg": meta[r["campaign_id"]][field]} for r in recs], "_seg").items():
+        for name, totals in group_by([{**r, "_g": key(r)} for r in recs], "_g").items():
             out.setdefault(name, {})[label] = totals
+    for t in out.values():
+        if "current" not in t:
+            prev = t["previous"]
+            zero = Decimal(0)
+            t["current"] = Totals(zero, 0, 0, None if prev.conversions is None else zero,
+                                  None if prev.conversion_value is None else zero, 0)
     return out
+
+
+def _target(raw: str | None, name: str) -> Decimal | None:
+    if raw is None:
+        return None
+    try:
+        value = Decimal(raw)
+    except InvalidOperation:
+        raise StopAnalysis(f"--target-{name} must be a number, got {raw!r}")
+    if not value.is_finite() or value <= 0:
+        raise StopAnalysis(f"--target-{name} must be a positive number, got {raw!r}")
+    return value
 
 
 @dataclass
@@ -89,7 +109,7 @@ def build_review(args: argparse.Namespace) -> Review:
     current = Period.parse(args.current)
     previous = Period.parse(args.previous) if args.previous else None
     for p in filter(None, [current, previous]):
-        if snap.start is None or p.start < snap.start or p.end > snap.end:
+        if snap.start is None or snap.end is None or p.start < snap.start or p.end > snap.end:
             raise StopAnalysis(f"period {p} is outside the snapshot range {snap.start} to {snap.end}")
         check_date_coverage(records, p.start, p.end, log)
     equivalent, reasons = equivalence(current, previous) if previous else (False, [])
@@ -104,37 +124,26 @@ def build_review(args: argparse.Namespace) -> Review:
         periods["previous"] = _by_period(records, previous)
 
     account = {label: aggregate(recs) for label, recs in periods.items()}
-    campaigns: dict[str, dict] = {}
-    for label, recs in periods.items():
-        for cid, totals in group_by(recs, "campaign_id").items():
-            campaigns.setdefault(cid, {})[label] = totals
-    # A campaign with previous-period rows but none now stopped serving (GAQL omits zero days):
-    # keep it with zero current totals so its -100% shows up instead of vanishing.
+    campaigns = _by_label(periods, lambda r: r["campaign_id"])
     for cid, t in campaigns.items():
-        if "current" not in t:
-            prev = t["previous"]
-            zero = Decimal(0)
-            t["current"] = Totals(zero, 0, 0, None if prev.conversions is None else zero,
-                                  None if prev.conversion_value is None else zero, 0)
+        if t["current"].rows == 0:
             log.warn(f"campaign {cid} has rows in the previous period but none in the current period "
                      "(shown with zero current activity)")
 
-    targets = {}
-    if args.target_roas is not None:
-        targets["roas"] = Decimal(args.target_roas)
-    if args.target_cpa is not None:
-        targets["cpa"] = Decimal(args.target_cpa)
+    targets = {k: v for k, v in (("roas", _target(args.target_roas, "roas")),
+                                 ("cpa", _target(args.target_cpa, "cpa"))) if v is not None}
+    thresholds = check_thresholds(_load_json(ROOT / "config" / "review_thresholds.json"))
 
     ctx = ReviewContext(
         current=current, previous=previous, equivalent=equivalent, account=account, campaigns=campaigns,
-        campaign_meta=meta, thresholds=_load_json(ROOT / "config" / "review_thresholds.json"), targets=targets,
+        campaign_meta=meta, thresholds=thresholds, targets=targets,
         caveats=caveats, source_label=snap.path.name, customer_id=snap.customer_id, currency=currency,
     )
     actions = generate_actions(ctx)
     parameters = {k: str(v) for k, v in vars(args).items()}
     data = ReportData(snapshot=snap, grain=grain, rows=len(records),
-                      by_type=_segment(periods, meta, "campaign_type"),
-                      by_brand=_segment(periods, meta, "brand_category"),
+                      by_type=_by_label(periods, lambda r: meta[r["campaign_id"]]["campaign_type"]),
+                      by_brand=_by_label(periods, lambda r: meta[r["campaign_id"]]["brand_category"]),
                       equivalence_reasons=reasons, parameters=parameters)
     return Review(ctx=ctx, actions=actions, log=log, data=data, records=records, periods=periods)
 

@@ -43,15 +43,18 @@ class CliError(Exception):
     pass
 
 
-def _parse_value(text: str):
-    return int(text) if re.fullmatch(r"-?\d+", text) else text
+TEXT_PARAMS = {"text", "match_type"}  # never converted, so a keyword like "007" keeps its leading zeros
+
+
+def _parse_value(key: str, text: str):
+    return int(text) if key not in TEXT_PARAMS and re.fullmatch(r"-?\d+", text) else text
 
 
 def load_requests(requests_dir: Path) -> dict[str, ChangeRequest]:
     """Latest revision of each request (files are <id>_<NN>_<status>.json, NN = history length)."""
     latest: dict[str, tuple[int, Path]] = {}
     for path in Path(requests_dir).glob("*.json"):
-        parts = path.stem.rsplit("_", 2)
+        parts = path.stem.split("_", 2)  # ids contain no "_"; statuses can ("rolled_back")
         if len(parts) != 3 or not parts[1].isdigit():
             continue
         rid, rev = parts[0], int(parts[1])
@@ -151,7 +154,7 @@ def cmd_propose(args) -> str:
         if "=" not in item:
             raise CliError(f"--param must be key=value, got {item!r}")
         key, value = item.split("=", 1)
-        params[key.strip()] = _parse_value(value.strip())
+        params[key.strip()] = _parse_value(key.strip(), value.strip())
     now = datetime.now(timezone.utc)
     cr = ChangeRequest(id=f"CR-{now:%Y%m%d-%H%M%S}-{secrets.token_hex(2)}",
                        customer_id=re.sub(r"\D", "", args.customer_id), operation=args.operation, params=params,

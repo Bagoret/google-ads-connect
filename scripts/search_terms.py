@@ -22,6 +22,7 @@ from typing import Literal
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from gads.logbook import RunLog, StopAnalysis  # noqa: E402
+from gads.findings import check_thresholds  # noqa: E402
 from gads.metrics import fmt, group_by  # noqa: E402
 from gads.normalize import records_from_snapshot, unique_dir  # noqa: E402
 from gads.viz import badge, bar_chart, page, tile  # noqa: E402
@@ -65,6 +66,11 @@ def negative_blocks(neg_text: str, neg_match: Literal["EXACT", "PHRASE", "BROAD"
     if neg_match == "BROAD":
         return set(neg) <= set(kw)
     raise ValueError(f"unknown match type {neg_match}")
+
+
+def active_keywords(kw_records: list[dict]) -> list[dict]:
+    """Positive keywords that can serve: negatives and explicitly PAUSED keywords are left out."""
+    return [k for k in kw_records if k.get("negative") != "true" and k.get("criterion_status") != "PAUSED"]
 
 
 def find_conflicts(negatives: list[dict], keywords: list[dict]) -> list[dict]:
@@ -193,21 +199,21 @@ def run(args) -> Path:
         raise StopAnalysis("active keywords are required: pass --keywords (keywords snapshot)")
     log = RunLog()
     snap, terms = records_from_snapshot(args.search_terms, {"campaign_id", "search_term", "clicks", "cost"},
-                                        log, "search_terms")
+                                        log, "search_terms", dated=True)
     grain = ("campaign_id", "ad_group_id", "search_term", "matched_keyword_text", "matched_keyword_match_type")
     check_unique(terms, grain)
     currency = check_single_currency(terms, args.expected_currency)
     caveats = partial_data_caveats(snap.end, account_timezone(terms, args.timezone), args.conversion_lag_days,
                                    parse_now(args.now))
     _, kw_records = records_from_snapshot(args.keywords, {"campaign_id", "keyword_text", "match_type"}, log, "keywords")
-    keywords = [k for k in kw_records if k.get("negative") != "true"]
+    keywords = active_keywords(kw_records)
     ad_group_negs = [{**k, "level": "ad_group", "scope_campaign_ids": [k["campaign_id"]]}
                      for k in kw_records if k.get("negative") == "true"]
     negatives = _negatives(args, log) + ad_group_negs
     lists = json.loads(Path(args.brand_lists).read_text(encoding="utf-8"))
     if not any(lists.get(k) for k in ("marketplace", "stocked", "competitor")):
         log.warn("brand lists are empty: every term is classified generic_or_unknown")
-    thresholds = json.loads((ROOT / "config" / "review_thresholds.json").read_text())
+    thresholds = check_thresholds(json.loads((ROOT / "config" / "review_thresholds.json").read_text(encoding="utf-8")))
 
     per_term = []
     for key, t in group_by([{**r, "_k": f"{r['campaign_id']}\x1f{r['search_term']}"} for r in terms], "_k").items():

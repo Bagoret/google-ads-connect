@@ -156,7 +156,7 @@ do not add these totals to campaign totals.</p></section>
 def run(args) -> Path:
     log = RunLog()
     snap, records = records_from_snapshot(args.products, {"item_id", "campaign_id", "date", "cost", "clicks"},
-                                          log, "product_daily")
+                                          log, "product_daily", dated=True)
     if not records:
         raise StopAnalysis("snapshot contains no usable rows")
     check_unique(records, SOURCE_GRAIN)
@@ -166,7 +166,8 @@ def run(args) -> Path:
     check_date_coverage(records, snap.start, snap.end, log)
     for r in records:
         r["item_id"] = normalize_item_id(r["item_id"])
-    titles = {r["item_id"]: (r.get("product_title", ""), r.get("product_brand", "")) for r in records}
+    titles = {r["item_id"]: (r.get("product_title", ""), r.get("product_brand", ""))
+              for r in sorted(records, key=lambda r: r["date"])}  # latest row wins, as in the weekly review
     perf = group_by(records, "item_id")
     log.assume(f"grain aggregated from {' × '.join(SOURCE_GRAIN)} to item_id × period "
                "(all campaigns in this shopping_performance_view snapshot)")
