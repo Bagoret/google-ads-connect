@@ -9,6 +9,8 @@ claude.ai web and mobile need a remotely hosted server instead (planned for late
 - The path of your credentials file (from `gcloud auth application-default login`) and your Cloud project ID.
 
 ## Steps
+On a Mac, `bash scripts/setup_mac.sh` can do steps 1–3 for you (it asks first and backs up the config).
+
 1. **Find pipx's full path.** Claude Desktop does not always see your terminal's PATH, so use the absolute path:
    - Mac: `which pipx` (often `/opt/homebrew/bin/pipx` or `~/.local/bin/pipx`)
    - Windows: `where pipx`
