@@ -64,6 +64,19 @@ Note every `UNKNOWN` field that limits interpretation.
     clearly labelled, but never add rows with invented metrics.
 12. **Evidence:** every finding cites snapshot filename, date ranges, and entity IDs (in the register).
 
+### AI analysis on the dashboard
+After the dashboard is built (it writes `facts.json` next to `index.html`):
+1. Read `facts.json` (computed numbers under keys, rule findings, caveats) and the context files.
+2. Write `insights.json` in the same folder: issues and opportunities, each with `kind`, `label`
+   (Observed / Hypothesis / Recommendation), `title`, `text`, `entity_type`, `entity_id`, `evidence` (fact keys),
+   `confidence`. **Write every number as `{{fact.key}}`; never type a number.** Entity IDs and period dates are
+   allowed as plain text. Hypotheses may have no evidence; Observed and Recommendation need at least one key.
+3. `python3 scripts/check_insights.py --facts <folder>/facts.json --insights <folder>/insights.json`; fix or drop
+   anything rejected.
+4. Rebuild with `--insights <folder>/insights.json` (rejected items never appear).
+5. Live questions: `python3 scripts/ask_server.py <folder>` (needs `pip install anthropic` and an API key or
+   `ant auth login`; explain this before installing; usage is billed to the user's Anthropic account).
+
 ### Optional: visual dashboard
 Same flags as the review: `python3 scripts/dashboard.py --snapshot <file> --current <A:B> --previous <A:B> …`.
 It writes one self-contained HTML file (no network requests) to `outputs/dashboard_*/index.html` using the same

@@ -25,7 +25,8 @@ from gads.compare import pct_change  # noqa: E402
 from gads.logbook import StopAnalysis  # noqa: E402
 from gads.metrics import Totals, derive, fmt  # noqa: E402
 from gads.normalize import unique_dir  # noqa: E402
-from gads.viz import CSS, JS, bar_chart, safe_json  # noqa: E402
+from gads.insights import build_facts, validate_insights  # noqa: E402
+from gads.viz import CSS, JS, badge, bar_chart, safe_json  # noqa: E402
 from weekly_review import Review, build_parser, build_review  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -268,7 +269,80 @@ def segment_table(groups: dict[str, dict[str, Totals]], currency: str) -> str:
             f'<tbody>{rows}</tbody></table></div></details>')
 
 
-def render_dashboard(review: Review, generated_at: datetime) -> str:
+ASK_JS = """
+(function(){
+  var sec = document.getElementById('ask'); if (!sec) return;
+  var tok = sec.getAttribute('data-token');
+  var live = location.protocol.indexOf('http') === 0 && tok && tok !== '__ASK_' + 'TOKEN__';
+  sec.querySelector('.ask-off').hidden = live; sec.querySelector('form').hidden = !live;
+  if (!live) return;
+  var form = sec.querySelector('form'), out = sec.querySelector('.ask-answer'), warn = sec.querySelector('.ask-warn');
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var q = form.querySelector('textarea').value; if (!q.trim()) return;
+    out.textContent = 'Thinking…'; warn.textContent = ''; form.querySelector('button').disabled = true;
+    fetch('/ask', {method: 'POST', headers: {'Content-Type': 'application/json', 'X-Ask-Token': tok},
+                   body: JSON.stringify({question: q})})
+      .then(function(r){ return r.json().then(function(d){ return {ok: r.ok, d: d}; }); })
+      .then(function(res){
+        out.textContent = res.ok ? res.d.answer : ('Error: ' + (res.d.error || 'request failed'));
+        if (res.ok && res.d.unverified && res.d.unverified.length)
+          warn.textContent = 'Not verified against the data: ' + res.d.unverified.join('; ');
+      })
+      .catch(function(){ out.textContent = 'Error: the local ask server is not reachable.'; })
+      .finally(function(){ form.querySelector('button').disabled = false; });
+  });
+})();
+"""
+
+KIND_BADGE = {"issue": ("serious", "▲", "Issue"), "opportunity": ("good", "◆", "Opportunity")}
+
+
+def ai_section(insights_path: Path | None, facts: dict[str, str]) -> str:
+    intro = ('<p class="muted small">Written by Claude from this dashboard&#39;s numbers. Every number was checked '
+             'against the engine output; insights citing anything else are dropped. Hypotheses are unverified; '
+             'recommendations need your approval.</p>')
+    if not insights_path:
+        return ('<section class="card"><h2>AI analysis</h2><p class="muted">No AI analysis yet. Ask Claude to run the '
+                'weekly-review skill (it writes insights and rebuilds this page), or use the Ask box below.</p></section>')
+    data = json.loads(Path(insights_path).read_text(encoding="utf-8"))
+    ok, rejected = validate_insights(data, facts)
+    groups = []
+    for kind, heading in (("issue", "Issues"), ("opportunity", "Opportunities")):
+        items = [i for i in ok if i["kind"] == kind]
+        cards = "".join(
+            f'<li class="request"><div class="req-head">{badge(*KIND_BADGE[kind])}{badge("neutral", "○", i["label"])}'
+            f'<span class="muted small">confidence {escape(i["confidence"])}</span></div>'
+            f'<div class="issue-title">{escape(i["title"])}</div><div class="issue-action">{escape(i["text"])}</div>'
+            + (f'<div class="muted small mono">' + " · ".join(f'{escape(e["key"])} = {escape(e["value"])}'
+                                                             for e in i["evidence"]) + "</div>" if i["evidence"] else "")
+            + "</li>" for i in items)
+        groups.append(f'<h3>{heading} ({len(items)})</h3>' + (f'<ul class="requests">{cards}</ul>' if items
+                                                              else '<p class="muted small">None.</p>'))
+    note = ""
+    if rejected:
+        reasons = "".join(f"<li>{escape(r['title'] or '(untitled)')}: {escape('; '.join(r['reasons']))}</li>"
+                          for r in rejected)
+        note = (f'<details><summary>{len(rejected)} insight{"s" if len(rejected) != 1 else ""} rejected</summary>'
+                f'<ul class="caveats">{reasons}</ul></details>')
+    return f'<section class="card"><h2>AI analysis</h2>{intro}{"".join(groups)}{note}</section>'
+
+
+ASK_SECTION = """<section class="card" id="ask" data-token="__ASK_TOKEN__"><h2>Ask about this data</h2>
+<p class="ask-off muted small">To ask questions, run <code>python3 scripts/ask_server.py &lt;this folder&gt;</code> and open the
+address it prints. Answers use only this dashboard's numbers and are checked the same way as the AI analysis.</p>
+<form hidden><textarea rows="3" style="width:100%;font:inherit" placeholder="e.g. Which campaign drove the ROAS drop?"></textarea>
+<p><button type="submit">Ask</button></p></form>
+<div class="ask-answer" style="white-space:pre-wrap"></div><div class="ask-warn muted small"></div></section>"""
+
+
+def facts_document(review: Review) -> dict:
+    return {"facts": build_facts(review), "actions": [a.as_dict() for a in review.actions],
+            "caveats": review.ctx.caveats + review.log.warnings, "source": review.data.snapshot.path.name,
+            "synthetic": review.data.snapshot.synthetic}
+
+
+def render_dashboard(review: Review, generated_at: datetime, insights_path: Path | None = None) -> str:
     ctx, data, log = review.ctx, review.data, review.log
     snap, cur = data.snapshot, ctx.currency
     daily = daily_series(review)
@@ -301,6 +375,8 @@ def render_dashboard(review: Review, generated_at: datetime) -> str:
 <section class="card"><h2>Issues to review</h2>
 <p class="muted small">Rule-based findings. Each is a proposal; nothing changes in the account without your approval.</p>
 {issues(review.actions)}</section>
+{ai_section(insights_path, build_facts(review))}
+{ASK_SECTION}
 <section class="card"><h2>Campaigns</h2>{campaign_table(review, sparks, daily)}</section>
 <section class="card"><h2>Data caveats</h2><ul class="caveats">{caveats or '<li>None detected.</li>'}</ul></section>
 <p class="muted small">Source: {escape(snap.path.name)} (fetched {escape(snap.fetched_at)}) · grain {escape(" × ".join(data.grain))} ·
@@ -309,20 +385,24 @@ thresholds from config/review_thresholds.json (not business-validated unless you
 </main>
 <script type="application/json" id="dash-data">{safe_json(payload)}</script>
 <script>{JS}</script>
+<script>{ASK_JS}</script>
 </body></html>
 """
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    parser.add_argument("--insights", type=Path, help="insights.json written by Claude (validated before display)")
+    args = parser.parse_args(argv)
     try:
         review = build_review(args)
     except StopAnalysis as exc:
         print(f"STOP: {exc.reason}", file=sys.stderr)
         return 2
-    html = render_dashboard(review, datetime.now(timezone.utc))
+    html = render_dashboard(review, datetime.now(timezone.utc), args.insights)
     out = unique_dir(args.out, f"dashboard_{review.ctx.customer_id}_{review.ctx.current.start}_{review.ctx.current.end}")
     (out / "index.html").write_text(html, encoding="utf-8")
+    (out / "facts.json").write_text(json.dumps(facts_document(review), indent=2, ensure_ascii=False), encoding="utf-8")
     print(out / "index.html")
     return 0
 
