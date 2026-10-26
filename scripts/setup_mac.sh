@@ -23,7 +23,7 @@ PROJECT_ID=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --project-id) PROJECT_ID="${2:-}"; shift 2 ;;
+    --project-id) [ $# -ge 2 ] || { echo "--project-id needs a value" >&2; exit 2; }; PROJECT_ID="$2"; shift 2 ;;
     -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1 (try --help)" >&2; exit 2 ;;
   esac
@@ -96,6 +96,9 @@ ok "gcloud at $(command -v gcloud)"
 step "4/7 OAuth client file (Desktop app)"
 if [ ! -f "$CLIENT" ]; then
   FOUND="$(ls -t "$HOME"/Downloads/client_secret*.json 2>/dev/null | head -n 1 || true)"
+  if [ -n "$FOUND" ] && ! "$PY" "$REPO/scripts/setup_config.py" client-file "$FOUND"; then
+    stop "$FOUND is not a Desktop app client file (it was left where it is). Delete or rename it, or put the right file at $CLIENT, then re-run."
+  fi
   if [ -n "$FOUND" ] && ask_yes "   Found $FOUND. Move it to $CLIENT?"; then
     mkdir -p "$CLIENT_DIR"; chmod 700 "$CLIENT_DIR"
     mv "$FOUND" "$CLIENT"

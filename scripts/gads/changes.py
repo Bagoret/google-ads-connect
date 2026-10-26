@@ -34,7 +34,6 @@ TRANSITIONS: dict[str, frozenset[str]] = {
     "verified": frozenset(),
     "rolled_back": frozenset(),
 }
-STATUSES = tuple(TRANSITIONS)
 MATCH_TYPES = {"EXACT", "PHRASE", "BROAD"}
 BEFORE_AFTER = [("amount_micros_before", "amount_micros_after"), ("before", "after"), ("before_micros", "after_micros")]
 

@@ -47,9 +47,12 @@ class AnswerTest(unittest.TestCase):
         self.assertEqual(call["messages"], [{"role": "user", "content": "How is ROAS?"}])
         self.assertEqual(result, {"answer": "ROAS is 1.86.", "unverified": []})
 
-    def test_free_numbers_flagged(self):
+    def test_answer_with_free_numbers_is_withheld(self):
         result = ask_server.answer_question("x", FACTS, FakeClient("ROAS fell 40%."))
         self.assertTrue(result["unverified"])
+        self.assertNotIn("40%", result["answer"])
+        self.assertNotIn("40%", " ".join(result["unverified"]))  # withheld figures never reach the page
+        self.assertIn("withheld", result["answer"])
 
     def test_refusal(self):
         result = ask_server.answer_question("x", FACTS, FakeClient("", stop_reason="refusal"))
@@ -84,10 +87,52 @@ class ServerTest(unittest.TestCase):
     def test_binds_localhost_only(self):
         self.assertEqual(self.server.server_address[0], "127.0.0.1")
 
-    def test_page_gets_token(self):
-        html = urllib.request.urlopen(self.base + "/", timeout=10).read().decode()
+    def test_page_needs_the_printed_address(self):
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            urllib.request.urlopen(self.base + "/", timeout=10)
+        self.assertEqual(ctx.exception.code, 403)
+        self.assertNotIn(self.token, ctx.exception.read().decode())
+        resp = urllib.request.urlopen(f"{self.base}/?t={self.token}", timeout=10)
+        html = resp.read().decode()
         self.assertIn(self.token, html)
         self.assertNotIn("__ASK_TOKEN__", html)
+        self.assertEqual(resp.headers["X-Frame-Options"], "DENY")
+        self.assertEqual(resp.headers["Referrer-Policy"], "no-referrer")
+        self.assertEqual(resp.headers["X-Content-Type-Options"], "nosniff")
+
+    def test_token_placeholder_only_replaced_in_the_ask_attribute(self):
+        d = Path(self.tmp.name)
+        (d / "index.html").write_text('<p>__ASK_TOKEN__</p><section id="ask" data-token="__ASK_TOKEN__"></section>')
+        server, token = ask_server.make_server(d, client=self.client, port=0)
+        try:
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            html = urllib.request.urlopen(f"http://127.0.0.1:{server.server_address[1]}/?t={token}",
+                                          timeout=10).read().decode()
+            self.assertEqual(html.count(token), 1)
+            self.assertIn("<p>__ASK_TOKEN__</p>", html)
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_other_host_names_refused(self):
+        req = urllib.request.Request(f"{self.base}/?t={self.token}", headers={"Host": "evil.example"})
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            urllib.request.urlopen(req, timeout=10)
+        self.assertEqual(ctx.exception.code, 403)
+
+    def raw_post(self, body: bytes, headers: dict):
+        req = urllib.request.Request(self.base + "/ask", data=body, method="POST",
+                                     headers={"X-Ask-Token": self.token, **headers})
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            urllib.request.urlopen(req, timeout=10)
+        return ctx.exception.code
+
+    def test_bad_requests_are_400s_not_api_errors(self):
+        self.assertEqual(self.raw_post(b"[1]", {"Content-Type": "application/json"}), 400)
+        self.assertEqual(self.raw_post(b'{"question": 5}', {"Content-Type": "application/json"}), 400)
+        self.assertEqual(self.raw_post(b"{}", {"Content-Type": "text/plain"}), 415)
+        self.assertEqual(self.raw_post(b"x" * 10_001, {"Content-Type": "application/json"}), 413)
+        self.assertEqual(self.client.beta.messages.calls, [])
 
     def test_ask_requires_token(self):
         with self.assertRaises(urllib.error.HTTPError) as ctx:

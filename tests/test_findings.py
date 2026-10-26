@@ -11,8 +11,7 @@ from gads.compare import Period  # noqa: E402
 from gads.findings import ACTION_COLUMNS, Action, ReviewContext, generate_actions  # noqa: E402
 from gads.metrics import Totals  # noqa: E402
 
-DEFAULTS = {"min_clicks_for_ratio": 30, "material_pct_change": 20, "min_spend_zero_conv": None,
-            "tracking_drop_pct": 50, "tracking_click_stability_pct": 20}
+DEFAULTS = {"min_clicks_for_ratio": 30, "material_pct_change": 20, "min_spend_zero_conv": None}
 CUR = Period(date(2026, 10, 13), date(2026, 10, 19))
 PREV = Period(date(2026, 10, 6), date(2026, 10, 12))
 
@@ -47,11 +46,9 @@ class ColumnsTest(unittest.TestCase):
 
 
 class RulesTest(unittest.TestCase):
-    def test_tracking_drop_is_p1(self):
+    def test_no_conversion_tracking_rule(self):
         acts = generate_actions(ctx(prev=T(clicks=100, conv="10"), cur=T(clicks=95, conv="0")))
-        self.assertEqual(acts[0].priority, "P1")
-        self.assertEqual(acts[0].entity_type, "account")
-        self.assertEqual(acts[0].entity_id, "9000000000")
+        self.assertFalse([a for a in acts if "tracking" in a.proposed_action.lower()])
 
     def test_no_change_rules_when_not_equivalent(self):
         acts = generate_actions(ctx(equivalent=False, prev=T(cost="100"), cur=T(cost="300")))

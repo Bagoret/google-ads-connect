@@ -5,10 +5,10 @@
   export ANTHROPIC_API_KEY=...              # or `ant auth login`; never put the key in a file in this repo
   python3 scripts/ask_server.py outputs/dashboard_<...>/
 
-Then open the printed address. The server listens on 127.0.0.1 only. Each question is sent to Claude with
-this dashboard's facts.json (computed numbers, rule findings, caveats) - never raw account data. Answers may
-cite numbers only as {{fact.key}} placeholders, which are filled from facts.json; anything else is flagged
-as unverified. API usage is billed to your Anthropic account.
+Then open the printed address (it carries a per-session token; the bare address is refused). The server listens on
+127.0.0.1 only. Each question is sent to Claude with this dashboard's facts.json (computed numbers, rule findings,
+caveats) - never raw account data. Answers may cite numbers only as {{fact.key}} placeholders, which are filled
+from facts.json; an answer containing any other number is withheld. API usage is billed to your Anthropic account.
 """
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ import secrets
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -26,6 +27,13 @@ from gads.insights import render_text  # noqa: E402
 
 MODEL = "claude-opus-5-5"
 MAX_QUESTION = 2000
+MAX_BODY = 10_000
+TOKEN_SLOT = 'data-token="__ASK_TOKEN__"'
+SECURITY_HEADERS = {"Cache-Control": "no-store", "X-Frame-Options": "DENY",
+                    "Content-Security-Policy": "frame-ancestors 'none'", "X-Content-Type-Options": "nosniff",
+                    "Referrer-Policy": "no-referrer"}
+WITHHELD = ("Answer withheld: it contained numbers that are not in this dashboard's facts, so it could not be "
+            "verified. Try asking again, or more narrowly.")
 SYSTEM = """You answer questions about one Google Ads dashboard for the business that owns it.
 
 Rules:
@@ -86,7 +94,9 @@ def answer_question(question: str, facts_doc: dict, client, model: str = MODEL) 
     if response.stop_reason == "max_tokens":
         text += "\n\n[Answer cut off at the length limit.]"
     answer, problems = render_text(text, facts_doc.get("facts", {}))
-    return {"answer": answer, "unverified": problems}
+    if problems:  # never send the unverified figures themselves to the page
+        return {"answer": WITHHELD, "unverified": [f"{len(problems)} number(s) or reference(s) not in the facts"]}
+    return {"answer": answer, "unverified": []}
 
 
 def _api_error(exc: Exception) -> str:
@@ -112,7 +122,7 @@ def make_server(folder: Path, client=None, port: int = 8765, host: str = "127.0.
     page = (folder / "index.html").read_text(encoding="utf-8")
     facts_doc = json.loads((folder / "facts.json").read_text(encoding="utf-8"))
     token = secrets.token_urlsafe(24)
-    served_page = page.replace("__ASK_TOKEN__", token).encode("utf-8")
+    served_page = page.replace(TOKEN_SLOT, f'data-token="{token}"', 1).encode("utf-8")
     state = {"client": client}
 
     class Handler(BaseHTTPRequestHandler):
@@ -123,7 +133,8 @@ def make_server(folder: Path, client=None, port: int = 8765, host: str = "127.0.
             self.send_response(code)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(body)))
-            self.send_header("Cache-Control", "no-store")
+            for name, value in SECURITY_HEADERS.items():
+                self.send_header(name, value)
             self.end_headers()
             self.wfile.write(body)
 
@@ -137,9 +148,14 @@ def make_server(folder: Path, client=None, port: int = 8765, host: str = "127.0.
         def do_GET(self):
             if not self._host_ok():
                 return self._send(403, b"forbidden", "text/plain")
-            if self.path in ("/", "/index.html"):
-                return self._send(200, served_page, "text/html; charset=utf-8")
-            return self._send(404, b"not found", "text/plain")
+            url = urlsplit(self.path)
+            if url.path not in ("/", "/index.html"):
+                return self._send(404, b"not found", "text/plain")
+            given = parse_qs(url.query).get("t", [""])[0]
+            if not hmac.compare_digest(given, token):  # other local users/processes cannot fetch the token
+                return self._send(403, b"Open the full address printed in the terminal (it includes a token).",
+                                  "text/plain; charset=utf-8")
+            return self._send(200, served_page, "text/html; charset=utf-8")
 
         def do_POST(self):
             if not self._host_ok() or self.path != "/ask":
@@ -148,11 +164,20 @@ def make_server(folder: Path, client=None, port: int = 8765, host: str = "127.0.
                 return self._json(403, {"error": "missing or wrong token"})
             if "application/json" not in (self.headers.get("Content-Type") or ""):
                 return self._json(415, {"error": "expected JSON"})
-            length = int(self.headers.get("Content-Length") or 0)
-            if length > 10_000:
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                return self._json(400, {"error": "bad Content-Length"})
+            if not 0 <= length <= MAX_BODY:
                 return self._json(413, {"error": "request too large"})
             try:
-                question = json.loads(self.rfile.read(length) or b"{}").get("question", "")
+                body = json.loads(self.rfile.read(length) or b"{}")
+            except ValueError:
+                return self._json(400, {"error": "body is not JSON"})
+            question = body.get("question", "") if isinstance(body, dict) else None
+            if not isinstance(question, str):
+                return self._json(400, {"error": 'expected {"question": "..."}'})
+            try:
                 if state["client"] is None:
                     state["client"] = default_client()
                 return self._json(200, answer_question(question, facts_doc, state["client"]))
@@ -176,8 +201,9 @@ def main(argv: list[str] | None = None) -> int:
         print("STOP: facts.json not found; rebuild the dashboard with scripts/dashboard.py", file=sys.stderr)
         return 2
     client = default_client()
-    server, _ = make_server(args.folder, client=client, port=args.port)
-    print(f"Open http://127.0.0.1:{server.server_address[1]}/  (Ctrl+C to stop). Questions are sent to {MODEL}.")
+    server, token = make_server(args.folder, client=client, port=args.port)
+    print(f"Open http://127.0.0.1:{server.server_address[1]}/?t={token}  (Ctrl+C to stop). "
+          f"Questions are sent to {MODEL}.")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import shlex
 import sys
@@ -22,16 +21,18 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from gads.logbook import StopAnalysis  # noqa: E402
+from gads.ids import parse_customer_id  # noqa: E402
 from gads.mcp_client import McpError, McpStdioClient, extract_payload  # noqa: E402
+from gads.mcp_config import STRUCTURED_PARAMS, find_search_tool, load_server_config  # noqa: E402,F401
 
 ROOT = Path(__file__).resolve().parent.parent
-SEARCH_TOOL_NAMES = ("search_search", "search")
-# Upstream googleads/google-ads-mcp `search` builds the GAQL itself from these parts.
-STRUCTURED_PARAMS = {"customer_id", "fields", "resource", "conditions"}
 
 
 def parse_gaql(gaql: str) -> dict:
     """Split a single-resource GAQL query into fields / resource / conditions (AND-joined)."""
+    if re.search(r"\b(ORDER\s+BY|LIMIT|PARAMETERS)\b", gaql, re.I):
+        raise StopAnalysis("ORDER BY / LIMIT / PARAMETERS are not supported in library queries "
+                           "(the MCP search tool takes them as separate arguments)")
     m = re.fullmatch(r"\s*SELECT\s+(.+?)\s+FROM\s+(\w+)(?:\s+WHERE\s+(.+?))?\s*", gaql, re.I | re.S)
     if not m:
         raise StopAnalysis(f"cannot parse GAQL (only SELECT … FROM … [WHERE …] is supported): {gaql[:200]}")
@@ -71,49 +72,36 @@ def render_query(path: Path, start: date | None, end: date | None) -> str:
     return " ".join(text.split())
 
 
-def write_snapshot(path: Path, envelope: dict) -> None:
+def write_snapshot(path: Path, envelope: dict) -> Path:
+    """Create path (or <stem>-2, -3 … if taken, e.g. by a concurrent fetch) and return the path written."""
+    text = json.dumps(envelope, ensure_ascii=False, indent=1, default=_json_default)  # fail before creating the file
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "x", encoding="utf-8") as fh:  # exclusive create: never overwrite raw data
-        json.dump(envelope, fh, ensure_ascii=False, indent=1, default=_json_default)
+    target, n = path, 1
+    while True:
+        try:
+            with open(target, "x", encoding="utf-8") as fh:  # exclusive create: never overwrite raw data
+                fh.write(text)
+            return target
+        except FileExistsError:
+            n += 1
+            target = path.with_name(f"{path.stem}-{n}{path.suffix}")
 
 
 def _json_default(obj):
-    # Only structuredContent payloads reach here with Decimals (parsed from JSON floats
-    # on the wire), so float() restores the same numeric value the server sent.
+    # Readable copy only: Decimals in the structured payload are written as floats, which can drop digits
+    # beyond ~17. Loaders read the exact numbers from "response_text" (the server's raw reply) instead.
     if isinstance(obj, Decimal):
         return int(obj) if obj == obj.to_integral_value() else float(obj)
     raise TypeError(type(obj))
 
 
-def load_server_config(path: Path) -> tuple[list[str], dict]:
-    if not path.exists():
-        raise StopAnalysis(f"{path} not found; copy .mcp.json.example and configure it (see docs/mcp-setup.md)")
-    server = json.loads(path.read_text())["mcpServers"]["google-ads-mcp"]
-    env = {k: _expand(str(v), k) for k, v in server.get("env", {}).items()}
-    unset = [k for k, v in env.items() if v.startswith(("YOUR_", "PATH_TO_"))]
-    if unset:
-        raise StopAnalysis(f".mcp.json still has placeholder values for: {', '.join(unset)}")
-    return [server["command"], *server.get("args", [])], env
-
-
-def _expand(value: str, key: str) -> str:
-    """Expand ${VAR} and ${VAR:-default} like Claude Code does for .mcp.json."""
-    def sub(m: re.Match) -> str:
-        name, default = m.group(1), m.group(3)
-        if name in os.environ:
-            return os.environ[name]
-        if default is not None:
-            return default
-        raise StopAnalysis(f".mcp.json env {key} references unset environment variable {name}")
-    return re.sub(r"\$\{(\w+)(:-([^}]*))?\}", sub, value)
-
-
 def run_snapshot(query: str, customer_id: str, start: date | None, end: date | None,
                  server_cmd: list[str], raw_dir: Path, env: dict | None = None,
                  queries_dir: Path = ROOT / "queries") -> Path:
-    customer_id = re.sub(r"\D", "", customer_id)
-    if len(customer_id) != 10:
-        raise StopAnalysis("customer ID must have 10 digits")
+    parsed = parse_customer_id(customer_id)
+    if not parsed:
+        raise StopAnalysis(f"not a 10-digit Google Ads customer ID: {customer_id!r}")
+    customer_id = parsed
     gaql = render_query(queries_dir / f"{query}.gaql", start, end)
     fetched = datetime.now(timezone.utc)
     stamp = fetched.strftime("%Y%m%dT%H%M%S")
@@ -128,13 +116,14 @@ def run_snapshot(query: str, customer_id: str, start: date | None, end: date | N
         with McpStdioClient(server_cmd, env=env) as client:
             envelope["server_info"] = client.initialize()
             tools = {t["name"]: t for t in client.list_tools()}
-            names = [n for n in SEARCH_TOOL_NAMES if n in tools]
-            if not names:
+            search = find_search_tool(tools)
+            if not search:
                 raise StopAnalysis(f"no search tool found; server offers: {sorted(tools)}")
-            tool = names[0]
+            tool = search["name"]
             arguments = build_search_args(tools[tool].get("inputSchema", {}), customer_id, gaql)
             envelope.update(tool_name=tool, tool_arguments=arguments)
             result = client.call_tool(tool, arguments)
+            response_text = client.last_response_text
     except McpError as exc:
         # Save what happened (message only — server stderr may hold request details), then stop.
         envelope.update(payload_kind="error", payload={"protocol_error": str(exc)})
@@ -151,9 +140,9 @@ def run_snapshot(query: str, customer_id: str, start: date | None, end: date | N
         text = next(c["text"] for c in result["content"] if c.get("type") == "text")
         envelope.update(payload_kind=kind, payload_text=text)
     else:
-        envelope.update(payload_kind=kind, payload=payload)
-    write_snapshot(path, envelope)
-    return path
+        # Exact copy of the server's reply; "payload" is a readable but float-rounded view of it.
+        envelope.update(payload_kind=kind, payload=payload, response_text=response_text)
+    return write_snapshot(path, envelope)
 
 
 def main(argv: list[str] | None = None) -> int:

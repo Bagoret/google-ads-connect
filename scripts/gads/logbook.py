@@ -15,7 +15,6 @@ class RunLog:
         self.assumptions: list[str] = []
         self.warnings: list[str] = []
         self.excluded: list[dict] = []
-        self.errors: list[str] = []
 
     def assume(self, msg: str) -> None:
         self.assumptions.append(msg)
@@ -26,13 +25,10 @@ class RunLog:
     def exclude(self, index: int, reason: str, raw: dict) -> None:
         self.excluded.append({"index": index, "reason": reason, "raw": raw})
 
-    def error(self, msg: str) -> None:
-        self.errors.append(msg)
-
     def to_dict(self) -> dict:
         return {
             "assumptions": list(self.assumptions),
             "warnings": list(self.warnings),
             "excluded": list(self.excluded),
-            "errors": list(self.errors),
+            "errors": [],  # kept for output compatibility; problems stop the run instead (StopAnalysis)
         }

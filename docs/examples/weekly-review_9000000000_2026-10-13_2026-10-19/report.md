@@ -104,8 +104,6 @@ Analysis sensitivity parameters from `config/review_thresholds.json` — default
 - `min_clicks_for_ratio`: 30
 - `material_pct_change`: 20
 - `min_spend_zero_conv`: None
-- `tracking_drop_pct`: 50
-- `tracking_click_stability_pct`: 20
 - No targets supplied.
 
 ## What this report cannot tell you

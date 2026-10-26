@@ -121,6 +121,19 @@ class SetupMacTest(unittest.TestCase):
         self.assertIn("Desktop app", r.stderr)
         self.assertFalse((self.home / "gcloud-args.txt").exists())
 
+    def test_web_client_in_downloads_is_not_moved(self):
+        self.install("pipx", "gcloud")
+        self.client({"web": {"client_id": "x"}})
+        r = self.run_script(["y"], "--project-id", "my-project-1")  # even if the user would say yes
+        self.assertEqual(r.returncode, 2)
+        self.assertTrue((self.home / "Downloads" / "client_secret_123.json").exists())
+        self.assertFalse((self.home / ".config" / "google-ads-os" / "client_secret.json").exists())
+
+    def test_project_id_flag_without_value_explains(self):
+        r = self.run_script([], "--project-id")
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("needs a value", r.stderr)
+
     def test_bad_project_id_stops_before_sign_in(self):
         self.install("pipx", "gcloud")
         self.client()

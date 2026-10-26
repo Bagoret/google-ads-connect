@@ -76,8 +76,10 @@ class RunSnapshotTest(unittest.TestCase):
             self.assertEqual(env["tool_name"], "search_search")
             self.assertEqual(env["server_info"]["name"], "fake-google-ads-mcp")
             self.assertEqual(env["payload_kind"], "json_text")
-            with self.assertRaises(FileExistsError):
-                write_snapshot(path, env)
+            before = path.read_text()
+            second = write_snapshot(path, env)
+            self.assertEqual(path.read_text(), before)  # never overwritten
+            self.assertNotEqual(second, path)
 
     def test_error_result_saved_then_stops(self):
         with tempfile.TemporaryDirectory() as tmp:

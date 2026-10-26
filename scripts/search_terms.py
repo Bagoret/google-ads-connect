@@ -22,9 +22,10 @@ from typing import Literal
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from gads.logbook import RunLog, StopAnalysis  # noqa: E402
+from gads.cli import add_common_args, load_json_file, load_thresholds, run_cli  # noqa: E402
 from gads.metrics import fmt, group_by  # noqa: E402
 from gads.normalize import records_from_snapshot, unique_dir  # noqa: E402
-from gads.viz import badge, bar_chart, page, tile  # noqa: E402
+from gads.viz import badge, bar_chart, caveats_card, page, source_note, tile  # noqa: E402
 from gads.validate import account_timezone, check_single_currency, check_unique, parse_now, partial_data_caveats  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -38,9 +39,9 @@ def normalize_term(s: str) -> str:
     return " ".join(s.split())
 
 
-def _tokens(text: str, strip_accents: bool = False) -> list[str]:
+def _tokens(text: str) -> list[str]:
     text = re.sub(r'[\[\]"+]', " ", text)
-    return (normalize_term(text) if strip_accents else " ".join(text.casefold().split())).split()
+    return text.casefold().split()
 
 
 def classify_brand(term: str, lists: dict[str, list[str]]) -> Literal["marketplace", "stocked", "competitor", "generic_or_unknown"]:
@@ -67,13 +68,19 @@ def negative_blocks(neg_text: str, neg_match: Literal["EXACT", "PHRASE", "BROAD"
     raise ValueError(f"unknown match type {neg_match}")
 
 
+def active_keywords(kw_records: list[dict]) -> list[dict]:
+    """Positive keywords that can serve: negatives and explicitly PAUSED keywords are left out."""
+    return [k for k in kw_records if k.get("negative") != "true" and k.get("criterion_status") != "PAUSED"]
+
+
 def find_conflicts(negatives: list[dict], keywords: list[dict]) -> list[dict]:
     conflicts = []
+    by_campaign: dict[str, list[int]] = {}
+    for i, kw in enumerate(keywords):
+        by_campaign.setdefault(kw["campaign_id"], []).append(i)
     for neg in negatives:
         scope = set(neg.get("scope_campaign_ids") or [])
-        for kw in keywords:
-            if kw["campaign_id"] not in scope:
-                continue
+        for kw in (keywords[i] for i in sorted(i for cid in scope for i in by_campaign.get(cid, []))):
             if neg.get("ad_group_id") and neg["ad_group_id"] != kw.get("ad_group_id"):
                 continue
             if negative_blocks(neg["keyword_text"], neg["match_type"], kw["keyword_text"]):
@@ -163,7 +170,6 @@ def render_search_dashboard(snap, currency: str, caveats: list[str], rows: list[
         f'blocks keyword "{escape(c["keyword_text"])}" ({escape(c["keyword_match_type"])})</div>'
         f'<div class="muted small">Campaign {escape(c["campaign_id"])} · keyword {escape(str(c["keyword_criterion_id"]))}'
         f' · approximate check (close variants and accents not modelled)</div></div></li>' for c in conflicts)
-    notes = "".join(f"<li>{escape(n)}</li>" for n in caveats + log.warnings)
     body = f"""
 <div class="banner">{escape(COVERAGE_NOTE)}</div>
 <section class="kpis" aria-label="Key metrics">{tiles}</section>
@@ -179,8 +185,8 @@ for your review; nothing is added to the account.</p>
 <div class="table-wrap"><table><thead><tr><th>Search term</th><th>Campaign</th><th>Brand class</th>
 <th class="num">Clicks</th><th class="num">Cost</th><th class="num">Conv.</th><th>Flags</th></tr></thead>
 <tbody>{"".join(term_rows)}</tbody></table></div>{more}</section>
-<section class="card"><h2>Data caveats</h2><ul class="caveats">{notes or "<li>None detected.</li>"}</ul></section>"""
-    footer = (f"Source: {escape(snap.path.name)} (fetched {escape(snap.fetched_at)}) · {len(rows)} rows · "
+{caveats_card(caveats + log.warnings)}"""
+    footer = (f"{source_note(snap)} · {len(rows)} rows · "
               f"{len(log.excluded)} excluded · currency {escape(currency)}")
     return page("Search-term review", f"Customer {snap.customer_id} · {snap.start} to {snap.end}",
                 snap.synthetic, body, footer)
@@ -193,21 +199,21 @@ def run(args) -> Path:
         raise StopAnalysis("active keywords are required: pass --keywords (keywords snapshot)")
     log = RunLog()
     snap, terms = records_from_snapshot(args.search_terms, {"campaign_id", "search_term", "clicks", "cost"},
-                                        log, "search_terms")
+                                        log, "search_terms", dated=True)
     grain = ("campaign_id", "ad_group_id", "search_term", "matched_keyword_text", "matched_keyword_match_type")
     check_unique(terms, grain)
     currency = check_single_currency(terms, args.expected_currency)
     caveats = partial_data_caveats(snap.end, account_timezone(terms, args.timezone), args.conversion_lag_days,
                                    parse_now(args.now))
     _, kw_records = records_from_snapshot(args.keywords, {"campaign_id", "keyword_text", "match_type"}, log, "keywords")
-    keywords = [k for k in kw_records if k.get("negative") != "true"]
+    keywords = active_keywords(kw_records)
     ad_group_negs = [{**k, "level": "ad_group", "scope_campaign_ids": [k["campaign_id"]]}
                      for k in kw_records if k.get("negative") == "true"]
     negatives = _negatives(args, log) + ad_group_negs
-    lists = json.loads(Path(args.brand_lists).read_text(encoding="utf-8"))
+    lists = load_json_file(args.brand_lists, "brand lists")
     if not any(lists.get(k) for k in ("marketplace", "stocked", "competitor")):
         log.warn("brand lists are empty: every term is classified generic_or_unknown")
-    thresholds = json.loads((ROOT / "config" / "review_thresholds.json").read_text())
+    thresholds = load_thresholds()
 
     per_term = []
     for key, t in group_by([{**r, "_k": f"{r['campaign_id']}\x1f{r['search_term']}"} for r in terms], "_k").items():
@@ -262,19 +268,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--negatives", type=Path)
     ap.add_argument("--shared-negatives", type=Path)
     ap.add_argument("--campaign-shared-sets", type=Path)
-    ap.add_argument("--expected-currency")
-    ap.add_argument("--timezone", help="only if the snapshot lacks customer.time_zone")
-    ap.add_argument("--conversion-lag-days", type=int)
-    ap.add_argument("--now", help="ISO-8601 timestamp for partial-data checks (default: now; no offset = UTC)")
     ap.add_argument("--brand-lists", type=Path, default=ROOT / "config" / "brand_lists.json")
-    ap.add_argument("--out", type=Path, default=ROOT / "outputs")
-    args = ap.parse_args(argv)
-    try:
-        print(run(args))
-    except StopAnalysis as exc:
-        print(f"STOP: {exc.reason}", file=sys.stderr)
-        return 2
-    return 0
+    return run_cli(run, add_common_args(ap).parse_args(argv))
 
 
 if __name__ == "__main__":

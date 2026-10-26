@@ -34,8 +34,10 @@ and propose negative-keyword **candidates**, checked against existing exclusions
 2. Run:
    ```
    python3 scripts/search_terms.py --search-terms <s> --keywords <k> --negatives <n> \
-     [--shared-negatives <sn> --campaign-shared-sets <cs>]
+     [--shared-negatives <sn> --campaign-shared-sets <cs>] \
+     [--expected-currency <from context>] [--conversion-lag-days N] [--timezone TZ]
    ```
+   Pass the optional flags only with values recorded (not UNKNOWN) in `context/`.
 3. **Brand classification** comes from `config/brand_lists.json`. If the lists are empty, everything is
    `generic_or_unknown`: say so and recommend filling the lists. Do not guess brands.
 4. **Intent review (your judgement, labelled):** for each term with `intent_review: PENDING`, starting

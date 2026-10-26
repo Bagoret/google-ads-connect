@@ -11,6 +11,7 @@ import queue
 import subprocess
 import tempfile
 import threading
+import time
 from decimal import Decimal
 
 from .logbook import StopAnalysis
@@ -49,12 +50,17 @@ class McpStdioClient:
         self._lines: queue.Queue = queue.Queue()
         self._next_id = 1
         self._stderr = tempfile.TemporaryFile(mode="w+")
+        self.last_response_text = ""  # the raw JSON-RPC line of the last answered request, kept verbatim
 
     def __enter__(self) -> "McpStdioClient":
-        self._proc = subprocess.Popen(
-            self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self._stderr,
-            env=self.env, text=True, encoding="utf-8", bufsize=1,
-        )
+        try:
+            self._proc = subprocess.Popen(
+                self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self._stderr,
+                env=self.env, text=True, encoding="utf-8", bufsize=1,
+            )
+        except OSError as exc:
+            self._stderr.close()
+            raise McpError(f"cannot start the MCP server ({type(exc).__name__}: {exc.strerror or exc})")
         threading.Thread(target=self._pump, daemon=True).start()
         return self
 
@@ -62,12 +68,16 @@ class McpStdioClient:
         self.close()
 
     def close(self) -> None:
-        if self._proc and self._proc.poll() is None:
+        if self._proc:
             try:
                 self._proc.stdin.close()
+            except OSError:
+                pass
+            try:
                 self._proc.wait(timeout=5)
-            except Exception:
+            except subprocess.TimeoutExpired:
                 self._proc.kill()
+                self._proc.wait()
         self._stderr.close()
 
     def _pump(self) -> None:
@@ -83,16 +93,23 @@ class McpStdioClient:
             return ""
 
     def _send(self, message: dict) -> None:
-        self._proc.stdin.write(json.dumps(message) + "\n")
-        self._proc.stdin.flush()
+        try:
+            self._proc.stdin.write(json.dumps(message) + "\n")
+            self._proc.stdin.flush()
+        except OSError:  # the server exited before reading (BrokenPipeError)
+            raise McpError(f"server is not accepting requests ({message.get('method')})", self._stderr_tail())
 
     def _request(self, method: str, params: dict) -> dict:
         req_id = self._next_id
         self._next_id += 1
         self._send({"jsonrpc": "2.0", "id": req_id, "method": method, "params": params})
+        deadline = time.monotonic() + self.timeout_s  # one deadline per request, however many notifications arrive
         while True:
+            remaining = deadline - time.monotonic()
             try:
-                line = self._lines.get(timeout=self.timeout_s)
+                if remaining <= 0:
+                    raise queue.Empty
+                line = self._lines.get(timeout=remaining)
             except queue.Empty:
                 raise McpError(f"timeout waiting for {method}", self._stderr_tail())
             if line is None:
@@ -108,6 +125,7 @@ class McpStdioClient:
                 continue  # notifications or unrelated messages
             if "error" in msg:
                 raise McpError(f"{method} failed: {msg['error']}")
+            self.last_response_text = line
             return msg.get("result", {})
 
     def initialize(self) -> dict:

@@ -4,7 +4,8 @@ Publishes the real upstream tool contract (tests/fixtures/upstream_golden_tools_
 copied from googleads/google-ads-mcp v0.0.5).
 
 Env:
-  FAKE_FIXTURE  path to a JSON file whose "result" object is returned by tools/call.
+  FAKE_FIXTURE  path to a JSON file whose "result" object is returned by tools/call
+                ("result_raw", a JSON string, is sent byte-for-byte instead).
   FAKE_RECORD   optional path; the tools/call params are written there for assertions.
   FAKE_MODE     "exit_on_call" = write to stderr and exit during tools/call.
 """
@@ -42,7 +43,12 @@ def main():
                 sys.stderr.write("SYNTH_STDERR_SECRET request details\n")
                 sys.exit(1)
             with open(os.environ["FAKE_FIXTURE"], encoding="utf-8") as fh:
-                reply(msg_id, json.load(fh)["result"])
+                fixture = json.load(fh)
+            if "result_raw" in fixture:  # exact bytes, e.g. floats with more digits than a double holds
+                sys.stdout.write(f'{{"jsonrpc": "2.0", "id": {msg_id}, "result": {fixture["result_raw"]}}}\n')
+                sys.stdout.flush()
+            else:
+                reply(msg_id, fixture["result"])
         else:
             sys.stdout.write(json.dumps({"jsonrpc": "2.0", "id": msg_id,
                                          "error": {"code": -32601, "message": "not found"}}) + "\n")

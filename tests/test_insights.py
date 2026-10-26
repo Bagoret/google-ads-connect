@@ -60,6 +60,17 @@ class RenderTextTest(unittest.TestCase):
         _, problems = render_text("ROAS dropped by 40%", facts())
         self.assertTrue(any("40%" in p for p in problems))
 
+    def test_other_numerals_and_magnitude_words_flagged(self):
+        for text in ("Cost doubled last week", "about twelve thousand euros", "a ½ share", "x² growth",
+                     "ROAS fell by half", "a threefold increase"):
+            _, problems = render_text(text, facts())
+            self.assertTrue(problems, text)
+
+    def test_short_numbers_are_never_treated_as_ids(self):
+        f = {**facts(), "campaign.42.current.roas": "1.00"}
+        _, problems = render_text("ROAS fell 42", f)
+        self.assertTrue(problems)
+
     def test_entity_ids_and_period_dates_allowed(self):
         _, problems = render_text("Campaign 9000000002 between 2026-10-13 and 2026-10-19", facts())
         self.assertEqual(problems, [])
@@ -80,6 +91,16 @@ class ValidateTest(unittest.TestCase):
         self.assertEqual(ok, [])
         self.assertEqual(len(rejected), len(cases))
         self.assertTrue(all(r["reasons"] for r in rejected))
+
+    def test_malformed_documents_rejected_not_crashing(self):
+        cases = [insight(kind=["issue"]), insight(label={"x": 1}), insight(confidence=["low"]),
+                 insight(entity_id=["9000000002"])]
+        ok, rejected = validate_insights({"insights": cases}, facts())
+        self.assertEqual((ok, len(rejected)), ([], len(cases)))
+        for doc in ([insight()], "text", 5, {"insights": "x"}):
+            ok, rejected = validate_insights(doc, facts())
+            self.assertEqual(ok, [])
+            self.assertTrue(rejected)
 
     def test_hypothesis_may_have_no_evidence_but_no_free_numbers(self):
         ok, _ = validate_insights({"insights": [insight(label="Hypothesis", evidence=[],

@@ -38,6 +38,8 @@ def load_snapshot(path: Path) -> Snapshot:
         raise StopAnalysis(f"snapshot {Path(path).name} holds an MCP error result, not data")
     if kind == "json_text":
         payload = json.loads(env["payload_text"], parse_float=Decimal)
+    elif kind == "structured" and env.get("response_text"):  # exact numbers from the raw reply
+        payload = json.loads(env["response_text"], parse_float=Decimal)["result"]["structuredContent"]
     elif kind == "structured":
         payload = env["payload"]
     else:
@@ -113,7 +115,7 @@ def _convert(value: object, kind: str) -> object:
 
 
 def apply_field_map(rows: list[dict], field_map: dict, required: set[str], log: RunLog) -> list[dict]:
-    present = {spec["name"] for r in rows for key, spec in field_map.items() if key in r}
+    present = {field_map[key]["name"] for r in rows for key in r if key in field_map}
     missing_everywhere = sorted(required - present) if rows else []
     if missing_everywhere:
         raise StopAnalysis(f"required field(s) missing from response: {', '.join(missing_everywhere)}")
@@ -159,11 +161,13 @@ def detect_grain(records: list[dict]) -> list[str]:
 
 
 def records_from_snapshot(path: Path, required: set[str], log: RunLog,
-                          expected_query: str | None = None) -> tuple[Snapshot, list[dict]]:
+                          expected_query: str | None = None, dated: bool = False) -> tuple[Snapshot, list[dict]]:
     """Load a snapshot and return its typed records (shared by all review scripts)."""
     snap = load_snapshot(path)
     if expected_query and snap.query_name != expected_query:
         raise StopAnalysis(f"{Path(path).name} is a {snap.query_name} snapshot; expected {expected_query}")
+    if dated and (snap.start is None or snap.end is None):
+        raise StopAnalysis(f"{Path(path).name} has no start/end date range; re-fetch it with scripts/snapshot.py")
     rows = [flatten_row(r) for r in extract_rows(snap.payload, log)]
     return snap, apply_field_map(rows, load_field_map(), required, log)
 

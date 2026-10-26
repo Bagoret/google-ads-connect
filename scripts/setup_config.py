@@ -20,9 +20,13 @@ import os
 import re
 import shutil
 import sys
-import tempfile
 from datetime import datetime
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from gads.files import write_private_json  # noqa: E402
+from gads.ids import parse_customer_id  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SERVER_NAME = "google-ads-mcp"
@@ -36,8 +40,8 @@ class SetupError(Exception):
 
 
 def normalise_customer_id(text: str) -> str:
-    digits = re.sub(r"[\s-]", "", text or "")
-    if not re.fullmatch(r"\d{10}", digits):
+    digits = parse_customer_id(text)
+    if not digits:
         raise SetupError(f"not a 10-digit Google Ads customer ID: {text!r}")
     return digits
 
@@ -93,27 +97,13 @@ def _backup(path: Path) -> Path:
     return target
 
 
-def _write_private(path: Path, data: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            json.dump(data, fh, indent=2)
-            fh.write("\n")
-        os.chmod(tmp, 0o600)
-        os.replace(tmp, path)
-    except BaseException:
-        Path(tmp).unlink(missing_ok=True)
-        raise
-
-
 def write_mcp_json(repo: Path, entry: dict, replace: bool = False) -> Path:
     path = Path(repo) / ".mcp.json"
     if path.exists():
         if not replace:
             raise SetupError(f"{path} already exists; re-run with --replace to back it up and rewrite it")
         _backup(path)
-    _write_private(path, {"mcpServers": {SERVER_NAME: entry}})
+    write_private_json(path, {"mcpServers": {SERVER_NAME: entry}})
     return path
 
 
@@ -136,7 +126,7 @@ def write_desktop(config: Path, entry: dict, replace: bool = False) -> bool:
     if config.exists():
         _backup(config)
     servers[SERVER_NAME] = entry
-    _write_private(config, data)
+    write_private_json(config, data)
     return True
 
 
