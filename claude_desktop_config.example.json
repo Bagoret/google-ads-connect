@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "google-ads-mcp": {
-      "command": "PATH_TO_PIPX",
-      "args": ["run", "--spec", "google-ads-mcp==0.0.5", "google-ads-mcp"],
+      "command": "PATH_TO_GOOGLE_ADS_MCP",
+      "args": [],
       "env": {
         "GOOGLE_APPLICATION_CREDENTIALS": "PATH_TO_CREDENTIALS_JSON",
         "GOOGLE_PROJECT_ID": "YOUR_PROJECT_ID"

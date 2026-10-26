@@ -11,18 +11,22 @@ claude.ai web and mobile need a remotely hosted server instead (planned for late
 ## Steps
 On a Mac, `bash scripts/setup_mac.sh` can do steps 1–3 for you (it asks first and backs up the config).
 
-1. **Find pipx's full path.** Claude Desktop does not always see your terminal's PATH, so use the absolute path:
-   - Mac: `which pipx` (often `/opt/homebrew/bin/pipx` or `~/.local/bin/pipx`)
-   - Windows: `where pipx`
+1. **Find the server command's full path.** Claude Desktop does not always see your terminal's PATH, so use the
+   absolute path of the `google-ads-mcp` command from `docs/mcp-setup.md` step 1:
+   - Mac (and Linux): `~/.local/share/google-ads-os/mcp-venv/bin/google-ads-mcp`, written out in full
+     (e.g. `/Users/you/.local/share/google-ads-os/mcp-venv/bin/google-ads-mcp`; `echo ~` shows your home folder)
+   - Windows: `<your venv>\Scripts\google-ads-mcp.exe`
 2. **Open the config.** Claude Desktop → Settings → Developer → Edit Config. That opens:
    - Mac: `~/Library/Application Support/Claude/claude_desktop_config.json`
    - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 3. **Add the server.** Copy the `mcpServers` entry from `claude_desktop_config.example.json` (in this repo) and
-   replace `PATH_TO_PIPX`, `PATH_TO_CREDENTIALS_JSON` and `YOUR_PROJECT_ID`. Keep any servers already in the file.
+   replace `PATH_TO_GOOGLE_ADS_MCP`, `PATH_TO_CREDENTIALS_JSON` and `YOUR_PROJECT_ID`. If the entry still uses
+   `pipx` with `"run", "--spec", …` (the older setup), replace it: that form fails on macOS 26.0–26.2 with Homebrew
+   Python (see `docs/mcp-setup.md` › Troubleshooting). Keep any servers already in the file.
    - Only if Google asks for a developer token: add `"GOOGLE_ADS_DEVELOPER_TOKEN"`. This file lives in your user
      folder, not in the repo, but it is plain text; restrict who can use the computer account.
    - Only if you reach the account via a manager account: add `"GOOGLE_ADS_LOGIN_CUSTOMER_ID"`.
-   - The example pins version `0.0.5`, the version this repo's checks were built against.
+   - The server environment has version `0.0.5` installed, the version this repo's checks were built against.
 4. **Restart Claude Desktop.** The Google Ads tools should appear in the tools menu of a new chat.
 5. **Test:** ask "List the Google Ads accounts I can access."
 
