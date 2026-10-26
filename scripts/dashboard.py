@@ -287,7 +287,7 @@ ASK_JS = """
       .then(function(res){
         out.textContent = res.ok ? res.d.answer : ('Error: ' + (res.d.error || 'request failed'));
         if (res.ok && res.d.unverified && res.d.unverified.length)
-          warn.textContent = 'Not verified against the data: ' + res.d.unverified.join('; ');
+          warn.textContent = 'Not in the facts: ' + res.d.unverified.join('; ');
       })
       .catch(function(){ out.textContent = 'Error: the local ask server is not reachable.'; })
       .finally(function(){ form.querySelector('button').disabled = false; });
@@ -330,7 +330,8 @@ def ai_section(insights_path: Path | None, facts: dict[str, str]) -> str:
 
 ASK_SECTION = """<section class="card" id="ask" data-token="__ASK_TOKEN__"><h2>Ask about this data</h2>
 <p class="ask-off muted small">To ask questions, run <code>python3 scripts/ask_server.py &lt;this folder&gt;</code> and open the
-address it prints. Answers use only this dashboard's numbers and are checked the same way as the AI analysis.</p>
+full address it prints (it includes a one-time token). Answers use only this dashboard's numbers; an answer citing
+any other number is withheld.</p>
 <form hidden><textarea rows="3" style="width:100%;font:inherit" placeholder="e.g. Which campaign drove the ROAS drop?"></textarea>
 <p><button type="submit">Ask</button></p></form>
 <div class="ask-answer" style="white-space:pre-wrap"></div><div class="ask-warn muted small"></div></section>"""

@@ -168,8 +168,9 @@ JS = """
     });
   });
   document.querySelectorAll('.bar[data-tip]').forEach(function(bar){
-    function on(e){ var r = bar.getBoundingClientRect(); var t = bar.getAttribute('data-tip').split(': ');
-      show(e.clientX || r.right, e.clientY || r.top, t.slice(1).join(': '), t[0]); }
+    function on(e){ var r = bar.getBoundingClientRect(); var t = bar.getAttribute('data-tip');
+      var i = t.lastIndexOf(': ');  // labels may contain ': ', values never do
+      show(e.clientX || r.right, e.clientY || r.top, t.slice(i + 2), t.slice(0, i)); }
     bar.addEventListener('pointermove', on); bar.addEventListener('focus', on);
     bar.addEventListener('pointerleave', hide); bar.addEventListener('blur', hide);
   });
