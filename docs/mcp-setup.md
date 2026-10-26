@@ -36,6 +36,23 @@ layers: `scripts/gads/mcp_client.py` refuses any tool outside a read-only allowl
 
 The steps below use **A**.
 
+## Fast path on a Mac
+After steps 2–4 (Cloud project, consent screen, Desktop app client), run from the repo folder:
+```bash
+bash scripts/setup_mac.sh --project-id YOUR_PROJECT_ID
+```
+It does steps 1, 5, 7 and 8 for you, and optionally adds the server to Claude Desktop:
+- checks Python 3.10+, `pipx` and `gcloud`, and **asks before** installing any of them with Homebrew
+  (`python@3.12`, `pipx`, `--cask gcloud-cli`); if Homebrew itself is missing it stops and points you to brew.sh;
+- moves the newest `~/Downloads/client_secret*.json` to `~/.config/google-ads-os/client_secret.json` (after asking),
+  checks it is a *Desktop app* client and makes it private (`chmod 600`);
+- runs the browser sign-in, then writes `.mcp.json` (private, pinned to `google-ads-mcp==0.0.5`, absolute `pipx`
+  path, no developer token) and runs `check_connection.py --live`;
+- backs up any `.mcp.json` or Claude Desktop config before changing it (`*.bak-<timestamp>`).
+
+It never prints secrets. Tested on Linux with stand-in `brew`/`pipx`/`gcloud`; the first real run is on your Mac,
+so read each prompt. The config writer is `scripts/setup_config.py` (also usable on its own).
+
 ## Steps (option A)
 1. **Install the tools**: Python 3.10+, [pipx](https://pipx.pypa.io/stable/#install-pipx), the
    [gcloud CLI](https://cloud.google.com/sdk/docs/install), and clone this repo.
