@@ -9,7 +9,7 @@ from .compare import pct_change
 from .findings import ACTION_COLUMNS, Action, ReviewContext
 from .logbook import RunLog
 from .metrics import Totals, derive, fmt
-from .normalize import Snapshot
+from .normalize import Snapshot, unique_dir
 
 CANNOT_TELL = [
     "Why a metric changed. Changes are observed; causes need change history, auction data, site and stock checks.",
@@ -173,11 +173,7 @@ def _actions_md(actions: list[Action]) -> str:
 
 def write_outputs(out_root: Path, slug: str, report_md: str, actions: list[Action], log: RunLog,
                   parameters: dict | None = None) -> Path:
-    out_root.mkdir(parents=True, exist_ok=True)
-    out, n = out_root / slug, 2
-    while out.exists():
-        out, n = out_root / f"{slug}-{n}", n + 1
-    out.mkdir()
+    out = unique_dir(out_root, slug)
     (out / "report.md").write_text(report_md, encoding="utf-8")
     (out / "actions.json").write_text(json.dumps([a.as_dict() for a in actions], indent=2, ensure_ascii=False),
                                       encoding="utf-8")

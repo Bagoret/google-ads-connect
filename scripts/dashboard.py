@@ -26,7 +26,7 @@ from gads.logbook import StopAnalysis  # noqa: E402
 from gads.metrics import Totals, derive, fmt  # noqa: E402
 from gads.normalize import unique_dir  # noqa: E402
 from gads.insights import build_facts, validate_insights  # noqa: E402
-from gads.viz import CSS, JS, badge, bar_chart, safe_json  # noqa: E402
+from gads.viz import badge, bar_chart, caveats_card, page, source_note  # noqa: E402
 from weekly_review import Review, build_parser, build_review  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -338,12 +338,14 @@ any other number is withheld.</p>
 
 
 def facts_document(review: Review) -> dict:
+    """facts.json: the engine's numbers under stable keys, plus rule findings and caveats."""
     return {"facts": build_facts(review), "actions": [a.as_dict() for a in review.actions],
             "caveats": review.ctx.caveats + review.log.warnings, "source": review.data.snapshot.path.name,
             "synthetic": review.data.snapshot.synthetic}
 
 
-def render_dashboard(review: Review, generated_at: datetime, insights_path: Path | None = None) -> str:
+def render_dashboard(review: Review, generated_at: datetime, insights_path: Path | None = None,
+                     facts: dict[str, str] | None = None) -> str:
     ctx, data, log = review.ctx, review.data, review.log
     snap, cur = data.snapshot, ctx.currency
     daily = daily_series(review)
@@ -352,16 +354,7 @@ def render_dashboard(review: Review, generated_at: datetime, insights_path: Path
     comparability = ("" if not ctx.previous or ctx.equivalent else
                      f'<div class="banner">Periods are not comparable ({escape("; ".join(data.equivalence_reasons))}). '
                      "Deltas are hidden.</div>")
-    caveats = "".join(f"<li>{escape(c)}</li>" for c in ctx.caveats + log.warnings)
-    payload = {"currency": cur, "daily": daily}
-    return f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Google Ads dashboard</title><style>{CSS}</style></head>
-<body><main>
-<h1>Google Ads dashboard</h1>
-<div class="sub">Customer {escape(ctx.customer_id)} · {escape(period_line)} · {escape(cur)}</div>
-{'<div class="banner"><strong>SYNTHETIC TEST DATA — NOT REAL.</strong> Generated from a labelled test fixture.</div>' if snap.synthetic else ''}
-{comparability}
+    body = f"""{comparability}
 {kpi_row(ctx)}
 <div class="grid2">
 <section class="card"><h2>Daily cost</h2>{line_chart("chart-cost", daily, "cost", cur)}{daily_table(daily, cur)}</section>
@@ -376,19 +369,15 @@ def render_dashboard(review: Review, generated_at: datetime, insights_path: Path
 <section class="card"><h2>Issues to review</h2>
 <p class="muted small">Rule-based findings. Each is a proposal; nothing changes in the account without your approval.</p>
 {issues(review.actions)}</section>
-{ai_section(insights_path, build_facts(review))}
+{ai_section(insights_path, facts if facts is not None else build_facts(review))}
 {ASK_SECTION}
 <section class="card"><h2>Campaigns</h2>{campaign_table(review, sparks, daily)}</section>
-<section class="card"><h2>Data caveats</h2><ul class="caveats">{caveats or '<li>None detected.</li>'}</ul></section>
-<p class="muted small">Source: {escape(snap.path.name)} (fetched {escape(snap.fetched_at)}) · grain {escape(" × ".join(data.grain))} ·
-{data.rows} rows · {len(log.excluded)} excluded · generated {escape(generated_at.isoformat(timespec="seconds"))} ·
-thresholds from config/review_thresholds.json (not business-validated unless you set them)</p>
-</main>
-<script type="application/json" id="dash-data">{safe_json(payload)}</script>
-<script>{JS}</script>
-<script>{ASK_JS}</script>
-</body></html>
-"""
+{caveats_card(ctx.caveats + log.warnings)}"""
+    footer = (f"{source_note(snap)} · grain {escape(' × '.join(data.grain))} ·\n"
+              f"{data.rows} rows · {len(log.excluded)} excluded · generated {escape(generated_at.isoformat(timespec='seconds'))} ·\n"
+              "thresholds from config/review_thresholds.json (not business-validated unless you set them)")
+    return page("Google Ads dashboard", f"Customer {ctx.customer_id} · {period_line} · {cur}", snap.synthetic,
+                body, footer, {"currency": cur, "daily": daily}, extra_js=ASK_JS)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -400,10 +389,11 @@ def main(argv: list[str] | None = None) -> int:
     except StopAnalysis as exc:
         print(f"STOP: {exc.reason}", file=sys.stderr)
         return 2
-    html = render_dashboard(review, datetime.now(timezone.utc), args.insights)
+    facts_doc = facts_document(review)
+    html = render_dashboard(review, datetime.now(timezone.utc), args.insights, facts_doc["facts"])
     out = unique_dir(args.out, f"dashboard_{review.ctx.customer_id}_{review.ctx.current.start}_{review.ctx.current.end}")
     (out / "index.html").write_text(html, encoding="utf-8")
-    (out / "facts.json").write_text(json.dumps(facts_document(review), indent=2, ensure_ascii=False), encoding="utf-8")
+    (out / "facts.json").write_text(json.dumps(facts_doc, indent=2, ensure_ascii=False), encoding="utf-8")
     print(out / "index.html")
     return 0
 

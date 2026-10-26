@@ -19,10 +19,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from gads.cli import add_common_args, load_json_file, run_cli  # noqa: E402
 from gads.logbook import RunLog, StopAnalysis  # noqa: E402
 from gads.metrics import Totals, aggregate, derive, fmt, group_by  # noqa: E402
 from gads.normalize import records_from_snapshot, unique_dir  # noqa: E402
-from gads.viz import badge, bar_chart, fold_top, page, tile  # noqa: E402
+from gads.viz import badge, bar_chart, caveats_card, fold_top, page, source_note, tile  # noqa: E402
 from gads.validate import (account_timezone, check_date_coverage, check_single_currency, check_unique,  # noqa: E402
                            parse_now, partial_data_caveats)
 
@@ -60,7 +61,9 @@ def join_supplement(perf: dict[str, Totals], supplement: list[dict], log: RunLog
 
 
 def load_supplement(path: Path) -> tuple[list[dict], str | None]:
-    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    data = load_json_file(path, "supplement")
+    if not isinstance(data, dict):
+        raise StopAnalysis(f'supplement {path} must be an object like {{"items": [...]}}')
     items = data.get("items", [])
     definition = data.get("margin_definition")
     if any(i.get("margin_rate") not in (None, "") for i in items) and not definition:
@@ -133,7 +136,6 @@ def render_product_dashboard(snap, currency: str, caveats: list[str], records: l
                 + f'</p><p>Supplement products with no performance: {len(only_supp)}'
                 + (f' <span class="muted small">({escape(", ".join(only_supp[:20]))})</span>' if only_supp else "")
                 + '</p><p class="muted small">IDs normalised with strip + casefold on both sides.</p></section>')
-    notes = "".join(f"<li>{escape(n)}</li>" for n in caveats + log.warnings)
     margin_head = '<th class="num">Margin after ad cost</th>' if with_margin else ""
     body = f"""{profit_note}
 <section class="kpis" aria-label="Key metrics">{"".join(tiles)}</section>
@@ -146,8 +148,8 @@ do not add these totals to campaign totals.</p></section>
 <th class="num">Clicks</th><th class="num">Conv.</th><th class="num">Conv. value</th><th class="num">Revenue ROAS</th>
 {margin_head}<th>Flags</th></tr></thead><tbody>{"".join(rows)}</tbody></table></div>{more}</section>
 {join}
-<section class="card"><h2>Data caveats</h2><ul class="caveats">{notes or "<li>None detected.</li>"}</ul></section>"""
-    footer = (f"Source: {escape(snap.path.name)} (fetched {escape(snap.fetched_at)}) · grain item_id × period · "
+{caveats_card(caveats + log.warnings)}"""
+    footer = (f"{source_note(snap)} · grain item_id × period · "
               f"{len(records)} rows · {len(log.excluded)} excluded · currency {escape(currency)}")
     return page("Product review", f"Customer {snap.customer_id} · {snap.start} to {snap.end}",
                 snap.synthetic, body, footer)
@@ -235,20 +237,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--products", type=Path, required=True)
     ap.add_argument("--supplement", type=Path)
-    ap.add_argument("--expected-currency")
-    ap.add_argument("--timezone", help="only if the snapshot lacks customer.time_zone")
-    ap.add_argument("--conversion-lag-days", type=int)
-    ap.add_argument("--now", help="ISO-8601 timestamp for partial-data checks (default: now; no offset = UTC)")
-    ap.add_argument("--out", type=Path, default=ROOT / "outputs")
-    args = ap.parse_args(argv)
-    try:
-        if args.supplement:
-            load_supplement(args.supplement)  # validate before anything is written
-        print(run(args))
-    except StopAnalysis as exc:
-        print(f"STOP: {exc.reason}", file=sys.stderr)
-        return 2
-    return 0
+    return run_cli(run, add_common_args(ap).parse_args(argv))  # run() validates the supplement before writing
 
 
 if __name__ == "__main__":

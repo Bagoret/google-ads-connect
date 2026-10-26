@@ -21,7 +21,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from gads.compare import Period, equivalence  # noqa: E402
-from gads.findings import ReviewContext, check_thresholds, generate_actions  # noqa: E402
+from gads.cli import add_common_args, load_json_file, load_thresholds, run_cli
+from gads.findings import ReviewContext, generate_actions  # noqa: E402
 from gads.logbook import RunLog, StopAnalysis  # noqa: E402
 from gads.metrics import Totals, aggregate, group_by  # noqa: E402
 from gads.normalize import apply_field_map, detect_grain, extract_rows, flatten_row, load_field_map, load_snapshot  # noqa: E402
@@ -31,10 +32,6 @@ from gads.validate import (account_timezone, check_date_coverage, check_single_c
 
 ROOT = Path(__file__).resolve().parent.parent
 REQUIRED = {"campaign_id", "date", "cost", "clicks"}
-
-
-def _load_json(path: Path) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _by_period(records: list[dict], period: Period) -> list[dict]:
@@ -117,7 +114,8 @@ def build_review(args: argparse.Namespace) -> Review:
     tz = account_timezone(records, args.timezone)
     caveats = partial_data_caveats(current.end, tz, args.conversion_lag_days, parse_now(args.now))
 
-    classification = _load_json(ROOT / "config" / "campaign_classification.json").get("campaigns", {})
+    classification = load_json_file(ROOT / "config" / "campaign_classification.json",
+                                    "campaign classification").get("campaigns", {})
     meta = _campaign_meta(records, classification)
     periods = {"current": _by_period(records, current)}
     if previous:
@@ -132,7 +130,7 @@ def build_review(args: argparse.Namespace) -> Review:
 
     targets = {k: v for k, v in (("roas", _target(args.target_roas, "roas")),
                                  ("cpa", _target(args.target_cpa, "cpa"))) if v is not None}
-    thresholds = check_thresholds(_load_json(ROOT / "config" / "review_thresholds.json"))
+    thresholds = load_thresholds()
 
     ctx = ReviewContext(
         current=current, previous=previous, equivalent=equivalent, account=account, campaigns=campaigns,
@@ -160,25 +158,13 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--snapshot", type=Path, required=True)
     ap.add_argument("--current", required=True, help="YYYY-MM-DD:YYYY-MM-DD")
     ap.add_argument("--previous", help="YYYY-MM-DD:YYYY-MM-DD")
-    ap.add_argument("--expected-currency")
-    ap.add_argument("--timezone", help="only if the snapshot lacks customer.time_zone")
-    ap.add_argument("--conversion-lag-days", type=int)
     ap.add_argument("--target-roas")
     ap.add_argument("--target-cpa")
-    ap.add_argument("--now", help="ISO-8601 timestamp to evaluate partial data against (default: now)")
-    ap.add_argument("--out", type=Path, default=ROOT / "outputs")
-    return ap
+    return add_common_args(ap)
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
-    try:
-        out = run_review(args)
-    except StopAnalysis as exc:
-        print(f"STOP: {exc.reason}", file=sys.stderr)
-        return 2
-    print(out)
-    return 0
+    return run_cli(run_review, build_parser().parse_args(argv))
 
 
 if __name__ == "__main__":

@@ -63,7 +63,19 @@ def bar_chart(rows: list[tuple[str, Decimal]], currency: str, aria_label: str, t
     return html
 
 
-def page(title: str, subtitle: str, synthetic: bool, body: str, footer: str, payload: dict | None = None) -> str:
+def caveats_card(items: list[str]) -> str:
+    notes = "".join(f"<li>{escape(n)}</li>" for n in items)
+    return f'<section class="card"><h2>Data caveats</h2><ul class="caveats">{notes or "<li>None detected.</li>"}</ul></section>'
+
+
+def source_note(snap) -> str:
+    """Escaped "Source: <file> (fetched <time>)" for page footers."""
+    return f"Source: {escape(snap.path.name)} (fetched {escape(snap.fetched_at)})"
+
+
+def page(title: str, subtitle: str, synthetic: bool, body: str, footer: str, payload: dict | None = None,
+         extra_js: str = "") -> str:
+    """Self-contained page. body and footer are HTML and must already be escaped by the caller."""
     banner = ('<div class="banner"><strong>SYNTHETIC TEST DATA — NOT REAL.</strong> Generated from a labelled '
               'test fixture.</div>' if synthetic else "")
     return f"""<!doctype html>
@@ -77,7 +89,8 @@ def page(title: str, subtitle: str, synthetic: bool, body: str, footer: str, pay
 <p class="muted small">{footer}</p>
 </main>
 <script type="application/json" id="dash-data">{safe_json(payload or {})}</script>
-<script>{JS}</script>
+<script>{JS}</script>{f"""
+<script>{extra_js}</script>""" if extra_js else ""}
 </body></html>
 """
 

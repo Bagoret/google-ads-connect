@@ -87,6 +87,24 @@ class DatedSnapshotTest(unittest.TestCase):
             records_from_snapshot(snap.path, {"campaign_id"}, RunLog())  # undated use still allowed
 
 
+class MissingInputFilesTest(unittest.TestCase):
+    def test_missing_brand_lists_or_supplement_stop_cleanly(self):
+        import product_review
+        import search_terms
+        with tempfile.TemporaryDirectory() as tmp:
+            code, err = _quiet(search_terms.main, [
+                "--search-terms", str(FIX / "synthetic_search_terms.json"), "--keywords", str(FIX / "synthetic_keywords.json"),
+                "--negatives", str(FIX / "synthetic_negatives.json"), "--brand-lists", tmp + "/missing.json", "--out", tmp + "/o"])
+            self.assertEqual(code, 2)
+            self.assertIn("cannot read brand lists", err)
+            Path(tmp, "bad.json").write_text("[1, 2]")
+            code, err = _quiet(product_review.main, [
+                "--products", str(FIX / "synthetic_product_daily.json"), "--supplement", tmp + "/bad.json",
+                "--out", tmp + "/o"])
+            self.assertEqual(code, 2)
+            self.assertFalse(Path(tmp, "o").exists())
+
+
 class ThresholdsTest(unittest.TestCase):
     def ctx(self, **over):
         review = build_review(build_parser().parse_args(["--snapshot", str(TWO_WEEKS), *ARGS]))
