@@ -39,9 +39,9 @@ def normalize_term(s: str) -> str:
     return " ".join(s.split())
 
 
-def _tokens(text: str, strip_accents: bool = False) -> list[str]:
+def _tokens(text: str) -> list[str]:
     text = re.sub(r'[\[\]"+]', " ", text)
-    return (normalize_term(text) if strip_accents else " ".join(text.casefold().split())).split()
+    return text.casefold().split()
 
 
 def classify_brand(term: str, lists: dict[str, list[str]]) -> Literal["marketplace", "stocked", "competitor", "generic_or_unknown"]:
@@ -75,11 +75,12 @@ def active_keywords(kw_records: list[dict]) -> list[dict]:
 
 def find_conflicts(negatives: list[dict], keywords: list[dict]) -> list[dict]:
     conflicts = []
+    by_campaign: dict[str, list[int]] = {}
+    for i, kw in enumerate(keywords):
+        by_campaign.setdefault(kw["campaign_id"], []).append(i)
     for neg in negatives:
         scope = set(neg.get("scope_campaign_ids") or [])
-        for kw in keywords:
-            if kw["campaign_id"] not in scope:
-                continue
+        for kw in (keywords[i] for i in sorted(i for cid in scope for i in by_campaign.get(cid, []))):
             if neg.get("ad_group_id") and neg["ad_group_id"] != kw.get("ad_group_id"):
                 continue
             if negative_blocks(neg["keyword_text"], neg["match_type"], kw["keyword_text"]):

@@ -36,6 +36,15 @@ class VerbatimTest(unittest.TestCase):
             self.assertEqual(records[0]["conversion_value"], Decimal("2.0"))
 
 
+class CustomerIdTest(unittest.TestCase):
+    def test_one_rule_everywhere(self):
+        from gads.ids import parse_customer_id
+        for text in ("123-456-7890", " 123 456 7890 ", "customers/1234567890", "1234567890"):
+            self.assertEqual(parse_customer_id(text), "1234567890", text)
+        for text in ("ID: 123-456-7890", "12345", "123-456-78901", "", None, "abc-def-ghij"):
+            self.assertIsNone(parse_customer_id(text), text)
+
+
 class WriteSafetyTest(unittest.TestCase):
     def test_unserialisable_envelope_leaves_no_file(self):
         with tempfile.TemporaryDirectory() as tmp:

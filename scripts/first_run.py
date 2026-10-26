@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,6 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from context_status import scan_context  # noqa: E402
+from gads.files import write_private_json  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 RELATIONSHIPS = {"owner", "employee", "agency", "freelancer", "consultant", "client", "other"}
@@ -55,10 +55,7 @@ def save_profile(root: Path, relationship: str, access: str, uses: list[str],
         "uses": sorted(set(uses)),
         "first_run_completed_at": (now or datetime.now(timezone.utc)).isoformat(),
     }
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as fh:
-        json.dump(data, fh, indent=2, ensure_ascii=False)
-    os.chmod(path, 0o600)
+    write_private_json(path, data)
     return path
 
 

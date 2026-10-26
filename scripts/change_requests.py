@@ -26,6 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from gads.ids import parse_customer_id  # noqa: E402
 from gads.changes import (BEFORE_AFTER, ChangeRequest, IllegalTransition, approve, record_approved,  # noqa: E402
                           save_request, transition, validate_change)
 from gads.viz import badge, page, tile  # noqa: E402
@@ -44,6 +45,13 @@ class CliError(Exception):
 
 
 TEXT_PARAMS = {"text", "match_type"}  # never converted, so a keyword like "007" keeps its leading zeros
+
+
+def _customer_id(text: str) -> str:
+    cid = parse_customer_id(text)
+    if not cid:
+        raise CliError(f"not a 10-digit Google Ads customer ID: {text!r}")
+    return cid
 
 
 def _parse_value(key: str, text: str):
@@ -157,7 +165,7 @@ def cmd_propose(args) -> str:
         params[key.strip()] = _parse_value(key.strip(), value.strip())
     now = datetime.now(timezone.utc)
     cr = ChangeRequest(id=f"CR-{now:%Y%m%d-%H%M%S}-{secrets.token_hex(2)}",
-                       customer_id=re.sub(r"\D", "", args.customer_id), operation=args.operation, params=params,
+                       customer_id=_customer_id(args.customer_id), operation=args.operation, params=params,
                        rationale=args.rationale, evidence=args.evidence)
     errors = validate_change(cr)
     if errors:

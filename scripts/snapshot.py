@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import shlex
 import sys
@@ -22,12 +21,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from gads.logbook import StopAnalysis  # noqa: E402
+from gads.ids import parse_customer_id  # noqa: E402
 from gads.mcp_client import McpError, McpStdioClient, extract_payload  # noqa: E402
+from gads.mcp_config import STRUCTURED_PARAMS, find_search_tool, load_server_config  # noqa: E402,F401
 
 ROOT = Path(__file__).resolve().parent.parent
-SEARCH_TOOL_NAMES = ("search_search", "search")
-# Upstream googleads/google-ads-mcp `search` builds the GAQL itself from these parts.
-STRUCTURED_PARAMS = {"customer_id", "fields", "resource", "conditions"}
 
 
 def parse_gaql(gaql: str) -> dict:
@@ -97,40 +95,13 @@ def _json_default(obj):
     raise TypeError(type(obj))
 
 
-def load_server_config(path: Path) -> tuple[list[str], dict]:
-    if not path.exists():
-        raise StopAnalysis(f"{path} not found; copy .mcp.json.example and configure it (see docs/mcp-setup.md)")
-    try:
-        server = json.loads(path.read_text(encoding="utf-8"))["mcpServers"]["google-ads-mcp"]
-        command, args, raw_env = server["command"], server.get("args", []), server.get("env", {})
-    except (ValueError, KeyError, TypeError):
-        raise StopAnalysis(f"{path} is not valid: it needs mcpServers -> google-ads-mcp -> command "
-                           "(compare with .mcp.json.example)")
-    env = {k: _expand(str(v), k) for k, v in raw_env.items()}
-    unset = [k for k, v in env.items() if v.startswith(("YOUR_", "PATH_TO_"))]
-    if unset:
-        raise StopAnalysis(f".mcp.json still has placeholder values for: {', '.join(unset)}")
-    return [command, *args], env
-
-
-def _expand(value: str, key: str) -> str:
-    """Expand ${VAR} and ${VAR:-default} like Claude Code does for .mcp.json."""
-    def sub(m: re.Match) -> str:
-        name, default = m.group(1), m.group(3)
-        if name in os.environ:
-            return os.environ[name]
-        if default is not None:
-            return default
-        raise StopAnalysis(f".mcp.json env {key} references unset environment variable {name}")
-    return re.sub(r"\$\{(\w+)(:-([^}]*))?\}", sub, value)
-
-
 def run_snapshot(query: str, customer_id: str, start: date | None, end: date | None,
                  server_cmd: list[str], raw_dir: Path, env: dict | None = None,
                  queries_dir: Path = ROOT / "queries") -> Path:
-    customer_id = re.sub(r"\D", "", customer_id)
-    if len(customer_id) != 10:
-        raise StopAnalysis("customer ID must have 10 digits")
+    parsed = parse_customer_id(customer_id)
+    if not parsed:
+        raise StopAnalysis(f"not a 10-digit Google Ads customer ID: {customer_id!r}")
+    customer_id = parsed
     gaql = render_query(queries_dir / f"{query}.gaql", start, end)
     fetched = datetime.now(timezone.utc)
     stamp = fetched.strftime("%Y%m%dT%H%M%S")
@@ -145,10 +116,10 @@ def run_snapshot(query: str, customer_id: str, start: date | None, end: date | N
         with McpStdioClient(server_cmd, env=env) as client:
             envelope["server_info"] = client.initialize()
             tools = {t["name"]: t for t in client.list_tools()}
-            names = [n for n in SEARCH_TOOL_NAMES if n in tools]
-            if not names:
+            search = find_search_tool(tools)
+            if not search:
                 raise StopAnalysis(f"no search tool found; server offers: {sorted(tools)}")
-            tool = names[0]
+            tool = search["name"]
             arguments = build_search_args(tools[tool].get("inputSchema", {}), customer_id, gaql)
             envelope.update(tool_name=tool, tool_arguments=arguments)
             result = client.call_tool(tool, arguments)

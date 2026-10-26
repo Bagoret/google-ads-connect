@@ -115,7 +115,7 @@ def _convert(value: object, kind: str) -> object:
 
 
 def apply_field_map(rows: list[dict], field_map: dict, required: set[str], log: RunLog) -> list[dict]:
-    present = {spec["name"] for r in rows for key, spec in field_map.items() if key in r}
+    present = {field_map[key]["name"] for r in rows for key in r if key in field_map}
     missing_everywhere = sorted(required - present) if rows else []
     if missing_everywhere:
         raise StopAnalysis(f"required field(s) missing from response: {', '.join(missing_everywhere)}")

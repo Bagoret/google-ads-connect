@@ -25,7 +25,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from gads.logbook import StopAnalysis  # noqa: E402
 from gads.mcp_client import McpError, McpStdioClient, extract_payload  # noqa: E402
-from snapshot import SEARCH_TOOL_NAMES, STRUCTURED_PARAMS, load_server_config  # noqa: E402
+from gads.ids import parse_customer_id  # noqa: E402
+from gads.mcp_config import STRUCTURED_PARAMS, find_search_tool, load_server_config  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SETUP = "see docs/mcp-setup.md"
@@ -119,8 +120,8 @@ def _check_env_values(env: dict) -> list[Check]:
     login = env.get("GOOGLE_ADS_LOGIN_CUSTOMER_ID")
     if not login:
         checks.append(Check("login customer ID", "info", "not set (fine unless you access the account via a manager account)"))
-    elif len(re.sub(r"\D", "", login)) == 10:
-        checks.append(Check("login customer ID", "ok", f"manager account {re.sub(r'[^0-9]', '', login)}"))
+    elif parse_customer_id(login):
+        checks.append(Check("login customer ID", "ok", f"manager account {parse_customer_id(login)}"))
     else:
         checks.append(Check("login customer ID", "fail", "GOOGLE_ADS_LOGIN_CUSTOMER_ID is not a 10-digit ID",
                             "use the manager account ID (digits only) or delete the line"))
@@ -135,7 +136,7 @@ def _live_checks(cmd: list[str], env: dict, customer_id: str | None, timeout_s: 
             tools = {t["name"]: t for t in client.list_tools()}
             checks.append(Check("server starts", "ok",
                                 f"{info.get('name', '?')} {info.get('version', '')}".strip() + f", {len(tools)} tools"))
-            search = next((tools[n] for n in SEARCH_TOOL_NAMES if n in tools), None)
+            search = find_search_tool(tools)
             props = set((search or {}).get("inputSchema", {}).get("properties", {}))
             if search and STRUCTURED_PARAMS <= props:
                 checks.append(Check("search tool contract", "ok", f"{search['name']} accepts {sorted(STRUCTURED_PARAMS)}"))
@@ -146,7 +147,10 @@ def _live_checks(cmd: list[str], env: dict, customer_id: str | None, timeout_s: 
             if not customer_id:
                 checks.append(Check("customer access", "info", "pass --customer-id to check account access"))
                 return checks
-            wanted = re.sub(r"\D", "", customer_id)
+            wanted = parse_customer_id(customer_id)
+            if not wanted:
+                checks.append(Check("customer access", "fail", f"not a 10-digit customer ID: {customer_id}"))
+                return checks
             name = next((n for n in ACCESSIBLE_TOOL_NAMES if n in tools), None)
             if not name:
                 checks.append(Check("customer access", "fail", "server has no list-accessible-customers tool"))

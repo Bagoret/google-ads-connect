@@ -12,7 +12,6 @@ Exit code 2 = analysis stopped (reason printed); no output is written in that ca
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
@@ -25,7 +24,7 @@ from gads.cli import add_common_args, load_json_file, load_thresholds, run_cli
 from gads.findings import ReviewContext, generate_actions  # noqa: E402
 from gads.logbook import RunLog, StopAnalysis  # noqa: E402
 from gads.metrics import Totals, aggregate, group_by  # noqa: E402
-from gads.normalize import apply_field_map, detect_grain, extract_rows, flatten_row, load_field_map, load_snapshot  # noqa: E402
+from gads.normalize import detect_grain, records_from_snapshot  # noqa: E402
 from gads.report import ReportData, render_report, write_outputs  # noqa: E402
 from gads.validate import (account_timezone, check_date_coverage, check_single_currency, check_unique,  # noqa: E402
                            parse_now, partial_data_caveats)
@@ -92,11 +91,7 @@ class Review:
 
 def build_review(args: argparse.Namespace) -> Review:
     log = RunLog()
-    snap = load_snapshot(args.snapshot)
-    if snap.query_name != "campaign_daily":
-        raise StopAnalysis(f"weekly review needs a campaign_daily snapshot, got {snap.query_name}")
-    rows = [flatten_row(r) for r in extract_rows(snap.payload, log)]
-    records = apply_field_map(rows, load_field_map(), REQUIRED, log)
+    snap, records = records_from_snapshot(args.snapshot, REQUIRED, log, "campaign_daily")
     if not records:
         raise StopAnalysis("snapshot contains no usable rows")
     grain = detect_grain(records)
