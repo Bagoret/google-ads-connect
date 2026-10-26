@@ -17,6 +17,7 @@ and tested on synthetic data. **No ad account is connected yet.**
 | Product review | `product-review` | `scripts/product_review.py` | item table + join check + `dashboard.html` |
 | Visual dashboard | `weekly-review` | `scripts/dashboard.py` | `outputs/dashboard_*/index.html`: one offline HTML file (KPIs, daily trends, segment mix, issues, campaigns) |
 | Check the OAuth/MCP connection | `onboarding` | `scripts/check_connection.py` | pass/fail checklist (no secrets printed) |
+| Track proposed changes | – | `scripts/change_requests.py` | requests with approval history + `outputs/change-requests/status.html` |
 | Fetch data (read-only) | all | `scripts/snapshot.py`, `scripts/inspect_snapshot.py` | `data/raw/*.json` |
 
 Sample output, generated from labelled synthetic data: [`docs/examples/`](docs/examples/).
@@ -109,6 +110,6 @@ writing is disabled. See [`docs/write-path.md`](docs/write-path.md).
 
 ## Roadmap
 1. **Connect** — run onboarding on your machine and pass the contract gate.
-2. **Visual layer** — done: weekly dashboard (`scripts/dashboard.py`) and `dashboard.html` pages from the search-term and product reviews; next: change-request status.
+2. **Visual layer** — done: weekly dashboard (`scripts/dashboard.py`) and `dashboard.html` pages from the search-term and product reviews; change-request status page (`scripts/change_requests.py view`).
 3. **Deeper analyses** — budget pacing, impression-share loss, PMax channels and assets, conversion audit, anomaly detection.
 4. **Approved actions** — enable an executor for a short list of low-risk operations, one approved change at a time.

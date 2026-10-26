@@ -1,0 +1,14 @@
+{
+  "id": "CR-20261026-085820-fc11",
+  "customer_id": "9000000000",
+  "operation": "pause_keyword",
+  "params": {
+    "ad_group_id": 8000000001,
+    "criterion_id": 7000000002
+  },
+  "rationale": "SYNTHETIC: 0 conversions on 35 clicks for 14 days",
+  "evidence": "docs/examples/search-terms_*/review.md",
+  "status": "proposed",
+  "approval": null,
+  "history": []
+}

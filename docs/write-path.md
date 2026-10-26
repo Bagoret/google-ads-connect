@@ -32,6 +32,21 @@ finding (actions.json) ──► ChangeRequest(proposed) ──► human review 
 | State machine | `proposed → approved/rejected`, `approved → executed/proposed`, `executed → verified/rolled_back` |
 | Records | `save_request()` writes each revision to `outputs/change-requests/` without overwriting; `record_approved()` appends to `decisions/change-log.md` only for approved changes |
 
+## Managing change requests (built)
+`scripts/change_requests.py` is the front end to the pipeline:
+
+| Command | What it does |
+|---|---|
+| `propose --operation … --customer-id … --param key=value … --rationale … --evidence …` | Validates and saves a new request; prints its ID and fingerprint |
+| `approve --id … --approver "Name" --fingerprint <64 hex>` | Approves that exact request and appends it to `decisions/change-log.md` |
+| `reject` / `reopen --id … --actor "Name" [--note …]` | Records the decision in the request's history |
+| `list` | One line per request; flags voided approvals |
+| `view` | Writes `outputs/change-requests/status.html`: counts by status, a card per request (what changes, why, evidence, approver, history), voided approvals, and whether writes are enabled |
+
+**Approval is a human decision.** Claude may run `propose`, `list`, `view`, `reject` and `reopen` when asked,
+but runs `approve` only after the approver has explicitly approved that request ID and fingerprint in the
+conversation. Every revision is saved as a new file, so the history cannot be silently rewritten.
+
 ## What enabling writes would take (future phase — not started)
 1. **An executor.** The likely route is the Google Ads API through Google's official `google-ads` Python
    client library. That is a third-party dependency, so it gets proposed and explained before it is installed.

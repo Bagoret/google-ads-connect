@@ -119,9 +119,9 @@ h1{font-size:22px;margin:0 0 4px}h2{font-size:15px;margin:0 0 12px}
 th,td{padding:8px 6px;border-bottom:1px solid var(--grid);text-align:left;white-space:nowrap}td.name{white-space:normal;min-width:140px}
 th{color:var(--ink-2);font-weight:600}.num{text-align:right;font-variant-numeric:tabular-nums}
 .badge{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;color:#0b0b0b;white-space:nowrap}
-.badge.neutral{background:var(--grid);color:var(--ink)}.badge.critical{background:var(--critical);color:#fff}.badge.serious{background:var(--serious)}.badge.warning{background:var(--warning)}
+.badge.neutral{background:var(--grid);color:var(--ink)}.badge.good{background:#0ca30c;color:#fff}.badge.critical{background:var(--critical);color:#fff}.badge.serious{background:var(--serious)}.badge.warning{background:var(--warning)}
 .issues{list-style:none;margin:0;padding:0}.issue{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--grid)}
-.issue-title{font-weight:600}.issue-action{color:var(--ink-2)}
+.requests{list-style:none;margin:0;padding:0}.request{padding:12px 0;border-bottom:1px solid var(--grid)}.req-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:4px}.issue-title{font-weight:600}.issue-action{color:var(--ink-2)}
 details{margin-top:8px}summary{cursor:pointer;color:var(--ink-2);font-size:13px}
 .tooltip{position:fixed;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--border);
 border-radius:8px;padding:6px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.12);display:none;z-index:10}
