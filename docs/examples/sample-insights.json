@@ -1,0 +1,19 @@
+{"_synthetic": "SYNTHETIC EXAMPLE - written against synthetic test data",
+ "insights": [
+  {"kind": "issue", "label": "Observed", "confidence": "medium", "entity_type": "campaign", "entity_id": "9000000002",
+   "title": "Search campaign 9000000002 spent more for less",
+   "text": "Cost changed {{campaign.9000000002.delta.cost}} while ROAS went from {{campaign.9000000002.previous.roas}} to {{campaign.9000000002.current.roas}} and CPA from {{campaign.9000000002.previous.cpa}} to {{campaign.9000000002.current.cpa}}.",
+   "evidence": ["campaign.9000000002.delta.cost", "campaign.9000000002.current.roas", "campaign.9000000002.current.cpa"]},
+  {"kind": "issue", "label": "Observed", "confidence": "high", "entity_type": "campaign", "entity_id": "9000000004",
+   "title": "Campaign 9000000004 stopped serving",
+   "text": "Cost was {{campaign.9000000004.previous.cost}} in the previous period and {{campaign.9000000004.current.cost}} in the current one. Check status, budget and approvals.",
+   "evidence": ["campaign.9000000004.previous.cost", "campaign.9000000004.current.cost"]},
+  {"kind": "opportunity", "label": "Hypothesis", "confidence": "low", "entity_type": "campaign", "entity_id": "9000000001",
+   "title": "Shopping campaign 9000000001 may have room to grow",
+   "text": "It has the highest ROAS ({{campaign.9000000001.current.roas}}). If it is limited by budget, more budget could add revenue; impression-share data is not in this snapshot, so this is unverified.",
+   "evidence": ["campaign.9000000001.current.roas"]},
+  {"kind": "opportunity", "label": "Recommendation", "confidence": "medium", "entity_type": "campaign", "entity_id": "9000000003",
+   "title": "Review Performance Max 9000000003 before the next budget decision",
+   "text": "It cost {{campaign.9000000003.current.cost}} with {{campaign.9000000003.current.conversions}} conversions in the current period. Review asset groups and product coverage first.",
+   "evidence": ["campaign.9000000003.current.cost", "campaign.9000000003.current.conversions"]}
+ ]}

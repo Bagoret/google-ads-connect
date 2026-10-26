@@ -15,6 +15,7 @@ and tested on synthetic data. **No ad account is connected yet.**
 | Weekly performance review | `weekly-review` | `scripts/weekly_review.py` | report + action register |
 | Search-term review | `search-term-review` | `scripts/search_terms.py` | review + negative candidates + conflicts + `dashboard.html` |
 | Product review | `product-review` | `scripts/product_review.py` | item table + join check + `dashboard.html` |
+| AI analysis + Ask box | `weekly-review` | `scripts/check_insights.py`, `scripts/ask_server.py` | verified AI insights on the dashboard; local Ask box (Claude Opus 5.5 via the official `anthropic` SDK, optional) |
 | Visual dashboard | `weekly-review` | `scripts/dashboard.py` | `outputs/dashboard_*/index.html`: one offline HTML file (KPIs, daily trends, segment mix, issues, campaigns) |
 | Check the OAuth/MCP connection | `onboarding` | `scripts/check_connection.py` | pass/fail checklist (no secrets printed) |
 | Track proposed changes | – | `scripts/change_requests.py` | requests with approval history + `outputs/change-requests/status.html` |
@@ -82,6 +83,9 @@ Never run `--reset` in the copy that holds your own business facts.
    - run the **contract gate** (`inspect_snapshot.py`) on the first real response;
    - ask you once, in a single grouped message, for what the account can't tell it.
 3. When the blockers are cleared, say **"weekly review for last week"**.
+
+### Google Ads in Claude Desktop
+Claude Desktop can use the same read-only server: see [`docs/claude-desktop.md`](docs/claude-desktop.md).
 
 ### Adding other users
 Colleagues, agencies, freelancers or client-side users each connect with their own Google login and
