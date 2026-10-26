@@ -97,7 +97,7 @@ step "4/7 OAuth client file (Desktop app)"
 if [ ! -f "$CLIENT" ]; then
   FOUND="$(ls -t "$HOME"/Downloads/client_secret*.json 2>/dev/null | head -n 1 || true)"
   if [ -n "$FOUND" ] && ! "$PY" "$REPO/scripts/setup_config.py" client-file "$FOUND"; then
-    stop "$FOUND is not a Desktop app client file (it was left where it is)."
+    stop "$FOUND is not a Desktop app client file (it was left where it is). Delete or rename it, or put the right file at $CLIENT, then re-run."
   fi
   if [ -n "$FOUND" ] && ask_yes "   Found $FOUND. Move it to $CLIENT?"; then
     mkdir -p "$CLIENT_DIR"; chmod 700 "$CLIENT_DIR"

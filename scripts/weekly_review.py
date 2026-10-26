@@ -20,7 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from gads.compare import Period, equivalence  # noqa: E402
-from gads.cli import add_common_args, load_json_file, load_thresholds, run_cli
+from gads.cli import add_common_args, load_json_file, load_thresholds, run_cli  # noqa: E402
 from gads.findings import ReviewContext, generate_actions  # noqa: E402
 from gads.logbook import RunLog, StopAnalysis  # noqa: E402
 from gads.metrics import Totals, aggregate, group_by  # noqa: E402

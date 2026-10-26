@@ -330,7 +330,7 @@ def ai_section(insights_path: Path | None, facts: dict[str, str]) -> str:
 
 ASK_SECTION = """<section class="card" id="ask" data-token="__ASK_TOKEN__"><h2>Ask about this data</h2>
 <p class="ask-off muted small">To ask questions, run <code>python3 scripts/ask_server.py &lt;this folder&gt;</code> and open the
-full address it prints (it includes a one-time token). Answers use only this dashboard's numbers; an answer citing
+full address it prints (it includes a per-session token). Answers use only this dashboard's numbers; an answer citing
 any other number is withheld.</p>
 <form hidden><textarea rows="3" style="width:100%;font:inherit" placeholder="e.g. Which campaign drove the ROAS drop?"></textarea>
 <p><button type="submit">Ask</button></p></form>

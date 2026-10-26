@@ -51,6 +51,7 @@ class AnswerTest(unittest.TestCase):
         result = ask_server.answer_question("x", FACTS, FakeClient("ROAS fell 40%."))
         self.assertTrue(result["unverified"])
         self.assertNotIn("40%", result["answer"])
+        self.assertNotIn("40%", " ".join(result["unverified"]))  # withheld figures never reach the page
         self.assertIn("withheld", result["answer"])
 
     def test_refusal(self):

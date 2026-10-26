@@ -72,19 +72,19 @@ def render_query(path: Path, start: date | None, end: date | None) -> str:
     return " ".join(text.split())
 
 
-def write_snapshot(path: Path, envelope: dict) -> None:
+def write_snapshot(path: Path, envelope: dict) -> Path:
+    """Create path (or <stem>-2, -3 … if taken, e.g. by a concurrent fetch) and return the path written."""
     text = json.dumps(envelope, ensure_ascii=False, indent=1, default=_json_default)  # fail before creating the file
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "x", encoding="utf-8") as fh:  # exclusive create: never overwrite raw data
-        fh.write(text)
-
-
-def _snapshot_path(raw_dir: Path, stem: str) -> Path:
-    path, n = raw_dir / f"{stem}.json", 1
-    while path.exists():
-        n += 1
-        path = raw_dir / f"{stem}-{n}.json"
-    return path
+    target, n = path, 1
+    while True:
+        try:
+            with open(target, "x", encoding="utf-8") as fh:  # exclusive create: never overwrite raw data
+                fh.write(text)
+            return target
+        except FileExistsError:
+            n += 1
+            target = path.with_name(f"{path.stem}-{n}{path.suffix}")
 
 
 def _json_default(obj):
@@ -106,7 +106,7 @@ def run_snapshot(query: str, customer_id: str, start: date | None, end: date | N
     fetched = datetime.now(timezone.utc)
     stamp = fetched.strftime("%Y%m%dT%H%M%S")
     span = f"{start}_{end}" if start else "nodates"
-    path = _snapshot_path(raw_dir, f"{query}_{customer_id}_{span}_{stamp}")
+    path = raw_dir / f"{query}_{customer_id}_{span}_{stamp}.json"
     envelope = {
         "query_name": query, "gaql": gaql, "customer_id": customer_id,
         "start": start.isoformat() if start else None, "end": end.isoformat() if end else None,
@@ -142,8 +142,7 @@ def run_snapshot(query: str, customer_id: str, start: date | None, end: date | N
     else:
         # Exact copy of the server's reply; "payload" is a readable but float-rounded view of it.
         envelope.update(payload_kind=kind, payload=payload, response_text=response_text)
-    write_snapshot(path, envelope)
-    return path
+    return write_snapshot(path, envelope)
 
 
 def main(argv: list[str] | None = None) -> int:

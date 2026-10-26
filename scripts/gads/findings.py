@@ -3,6 +3,7 @@ assign causes. Every action requires approval."""
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import math
 from decimal import Decimal
 
 from .compare import Period, pct_change
@@ -59,7 +60,7 @@ def check_thresholds(thresholds: dict) -> dict:
         value = thresholds.get(key)
         if value is None and key in OPTIONAL_THRESHOLDS:
             continue
-        if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
             raise StopAnalysis(f"config/review_thresholds.json: {key} must be a non-negative number"
                                + (" or null" if key in OPTIONAL_THRESHOLDS else ""))
     return thresholds

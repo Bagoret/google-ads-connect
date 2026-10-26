@@ -5,7 +5,7 @@
   export ANTHROPIC_API_KEY=...              # or `ant auth login`; never put the key in a file in this repo
   python3 scripts/ask_server.py outputs/dashboard_<...>/
 
-Then open the printed address (it carries a one-time token; the bare address is refused). The server listens on
+Then open the printed address (it carries a per-session token; the bare address is refused). The server listens on
 127.0.0.1 only. Each question is sent to Claude with this dashboard's facts.json (computed numbers, rule findings,
 caveats) - never raw account data. Answers may cite numbers only as {{fact.key}} placeholders, which are filled
 from facts.json; an answer containing any other number is withheld. API usage is billed to your Anthropic account.
@@ -94,7 +94,9 @@ def answer_question(question: str, facts_doc: dict, client, model: str = MODEL) 
     if response.stop_reason == "max_tokens":
         text += "\n\n[Answer cut off at the length limit.]"
     answer, problems = render_text(text, facts_doc.get("facts", {}))
-    return {"answer": WITHHELD if problems else answer, "unverified": problems}
+    if problems:  # never send the unverified figures themselves to the page
+        return {"answer": WITHHELD, "unverified": [f"{len(problems)} number(s) or reference(s) not in the facts"]}
+    return {"answer": answer, "unverified": []}
 
 
 def _api_error(exc: Exception) -> str:

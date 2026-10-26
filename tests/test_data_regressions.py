@@ -39,7 +39,8 @@ class VerbatimTest(unittest.TestCase):
 class CustomerIdTest(unittest.TestCase):
     def test_one_rule_everywhere(self):
         from gads.ids import parse_customer_id
-        for text in ("123-456-7890", " 123 456 7890 ", "customers/1234567890", "1234567890"):
+        for text in ("123-456-7890", " 123 456 7890 ", "customers/1234567890", "1234567890", "123.456.7890",
+                     "(123) 456-7890"):
             self.assertEqual(parse_customer_id(text), "1234567890", text)
         for text in ("ID: 123-456-7890", "12345", "123-456-78901", "", None, "abc-def-ghij"):
             self.assertIsNone(parse_customer_id(text), text)
@@ -52,6 +53,14 @@ class WriteSafetyTest(unittest.TestCase):
             with self.assertRaises(TypeError):
                 snapshot.write_snapshot(path, {"bad": object()})
             self.assertFalse(path.exists())
+
+    def test_write_never_overwrites_and_picks_a_free_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            first = Path(tmp) / "snap.json"
+            first.write_text("original")
+            written = snapshot.write_snapshot(first, {"a": 1})  # e.g. a concurrent fetch took the name
+            self.assertEqual(first.read_text(), "original")
+            self.assertEqual(json.loads(written.read_text()), {"a": 1})
 
     def test_two_fetches_in_the_same_second_both_saved(self):
         with tempfile.TemporaryDirectory() as tmp:

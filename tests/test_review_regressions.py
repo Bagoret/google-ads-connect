@@ -126,6 +126,8 @@ class ThresholdsTest(unittest.TestCase):
             check_thresholds({**THRESHOLDS, "material_pct_change": "20"})
         with self.assertRaises(StopAnalysis):
             check_thresholds({**THRESHOLDS, "tracking_drop_pct": -1})
+        with self.assertRaises(StopAnalysis):
+            check_thresholds({**THRESHOLDS, "material_pct_change": float("nan")})
         check_thresholds(THRESHOLDS)
 
 
