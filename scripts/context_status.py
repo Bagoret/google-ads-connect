@@ -92,8 +92,7 @@ def readiness_markdown(fields: list[Field], mcp_configured: bool, snapshots: lis
           "| Analysis | Queries needed |", "|---|---|",
           "| Weekly review | campaign_daily |",
           "| Search-term review | search_terms, keywords, negative_keywords, shared_negative_keywords, campaign_shared_sets |",
-          "| Product review | product_daily (+ optional margin/stock supplement) |",
-          "| Measurement audit | conversion_actions |", ""]
+          "| Product review | product_daily (+ optional margin/stock supplement) |", ""]
     if snapshots:
         L += ["## Snapshots found", "", *[f"- `{s}`" for s in snapshots], ""]
     return "\n".join(L)

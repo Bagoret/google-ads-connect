@@ -112,7 +112,7 @@ class ThresholdsTest(unittest.TestCase):
         return review.ctx
 
     def test_null_disables_each_rule_without_crashing(self):
-        for key in ("tracking_drop_pct", "tracking_click_stability_pct", "material_pct_change", "min_spend_zero_conv"):
+        for key in ("material_pct_change", "min_spend_zero_conv"):
             generate_actions(self.ctx(**{key: None}))  # must not raise
 
     def test_null_material_threshold_removes_material_findings(self):
@@ -125,7 +125,7 @@ class ThresholdsTest(unittest.TestCase):
         with self.assertRaises(StopAnalysis):
             check_thresholds({**THRESHOLDS, "material_pct_change": "20"})
         with self.assertRaises(StopAnalysis):
-            check_thresholds({**THRESHOLDS, "tracking_drop_pct": -1})
+            check_thresholds({**THRESHOLDS, "material_pct_change": -1})
         with self.assertRaises(StopAnalysis):
             check_thresholds({**THRESHOLDS, "material_pct_change": float("nan")})
         check_thresholds(THRESHOLDS)

@@ -50,8 +50,7 @@ class ReviewContext:
 
 
 REQUIRED_THRESHOLDS = ("min_clicks_for_ratio",)
-OPTIONAL_THRESHOLDS = ("material_pct_change", "min_spend_zero_conv", "tracking_drop_pct",
-                       "tracking_click_stability_pct")
+OPTIONAL_THRESHOLDS = ("material_pct_change", "min_spend_zero_conv")
 
 
 def check_thresholds(thresholds: dict) -> dict:
@@ -100,36 +99,6 @@ def _action(ctx, priority, etype, eid, totals, finding, proposed, rationale, ris
     conf = _confidence(ctx, clicks)
     return Action(_priority(priority, conf), etype, eid, finding, _evidence(ctx, totals), proposed,
                   rationale, conf, risk, "yes", validation)
-
-
-def _rule_tracking(ctx: ReviewContext) -> list[Action]:
-    if not (ctx.previous and ctx.equivalent and "previous" in ctx.account):
-        return []
-    cur, prev = ctx.account["current"], ctx.account["previous"]
-    if not prev.conversions or cur.conversions is None:
-        return []
-    drop_limit = ctx.thresholds.get("tracking_drop_pct")
-    stability = ctx.thresholds.get("tracking_click_stability_pct")
-    if drop_limit is None or stability is None:
-        return []
-    drop = -pct_change(cur.conversions, prev.conversions)
-    click_change = pct_change(Decimal(cur.clicks), Decimal(prev.clicks))
-    if drop < drop_limit or click_change is None:
-        return []
-    if abs(click_change) > stability:
-        return []
-    act = _action(
-        ctx, "P1", "account", ctx.customer_id or "account", ctx.account,
-        f"Conversions fell {drop:.1f}% while clicks changed {click_change:+.1f}%",
-        "Verify conversion tracking before any optimisation",
-        "A large conversion drop with stable traffic is consistent with a measurement problem; "
-        "it is also consistent with a real demand or site change — the data cannot tell which.",
-        "Optimising on broken tracking would misdirect spend; smart bidding may already be reacting.",
-        "Compare Google Ads conversions with back-end orders for the same days; check conversion action "
-        "status and recent tag/site changes; re-run this review after the check.",
-        cur.clicks)
-    act.priority = "P1"  # deliberate: a possible tracking failure outranks everything, even on low volume
-    return [act]
 
 
 def _rule_zero_conv(ctx: ReviewContext) -> list[Action]:
@@ -237,7 +206,7 @@ def _rule_targets(ctx: ReviewContext) -> list[Action]:
 
 
 def generate_actions(ctx: ReviewContext) -> list[Action]:
-    actions = _rule_tracking(ctx) + _rule_zero_conv(ctx) + _rule_material(ctx) + _rule_targets(ctx)
+    actions = _rule_zero_conv(ctx) + _rule_material(ctx) + _rule_targets(ctx)
 
     def cost_of(a: Action) -> Decimal:
         if a.entity_type == "campaign" and a.entity_id in ctx.campaigns:

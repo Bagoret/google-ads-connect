@@ -2,7 +2,5 @@
   "_note": "Analysis sensitivity parameters, NOT business targets. Defaults are not business-validated; set them deliberately. null disables the rule.",
   "min_clicks_for_ratio": 30,
   "material_pct_change": 20,
-  "min_spend_zero_conv": null,
-  "tracking_drop_pct": 50,
-  "tracking_click_stability_pct": 20
+  "min_spend_zero_conv": null
 }

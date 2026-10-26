@@ -116,5 +116,5 @@ writing is disabled. See [`docs/write-path.md`](docs/write-path.md).
 ## Roadmap
 1. **Connect** — run onboarding on your machine and pass the contract gate.
 2. **Visual layer** — done: weekly dashboard (`scripts/dashboard.py`) and `dashboard.html` pages from the search-term and product reviews; change-request status page (`scripts/change_requests.py view`).
-3. **Deeper analyses** — budget pacing, impression-share loss, PMax channels and assets, conversion audit, anomaly detection.
+3. **Deeper analyses** — budget pacing, impression-share loss, PMax channels and assets, anomaly detection.
 4. **Approved actions** — enable an executor for a short list of low-risk operations, one approved change at a time.
