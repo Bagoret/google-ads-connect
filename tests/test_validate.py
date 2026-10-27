@@ -6,8 +6,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from gads.logbook import RunLog, StopAnalysis  # noqa: E402
-from gads.validate import check_date_coverage, check_single_currency, check_unique, partial_data_caveats  # noqa: E402
+from gads.core.logbook import RunLog, StopAnalysis  # noqa: E402
+from gads.core.validate import check_date_coverage, check_single_currency, check_unique, partial_data_caveats  # noqa: E402
 
 UTC = timezone.utc
 

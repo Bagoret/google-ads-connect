@@ -8,8 +8,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from gads.logbook import RunLog, StopAnalysis  # noqa: E402
-from gads.normalize import apply_field_map, extract_rows, flatten_row, load_field_map, load_snapshot  # noqa: E402
+from gads.core.logbook import RunLog, StopAnalysis  # noqa: E402
+from gads.core.normalize import apply_field_map, extract_rows, flatten_row, load_field_map, load_snapshot  # noqa: E402
 
 FIX = ROOT / "tests" / "fixtures"
 FMAP = load_field_map()
@@ -93,6 +93,27 @@ class FieldMapTest(unittest.TestCase):
         apply_field_map([{"metrics.mystery": "1"}], FMAP, set(), log)
         self.assertTrue(any("metrics.mystery" in a for a in log.to_dict()["warnings"]))
 
+
+
+class InspectCliTest(unittest.TestCase):
+    def run_main(self, argv):
+        import contextlib, io
+        from inspect_snapshot import main
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = main(argv)
+        return code, out.getvalue() + err.getvalue()
+
+    def test_help_prints_usage(self):
+        code, text = self.run_main(["--help"])
+        self.assertEqual(code, 0)
+        self.assertIn("Usage", text)
+
+    def test_missing_file_stops_cleanly(self):
+        code, text = self.run_main(["data/raw/does-not-exist.json"])
+        self.assertEqual(code, 2)
+        self.assertIn("STOP:", text)
+        self.assertNotIn("Traceback", text)
 
 
 class InspectTest(unittest.TestCase):

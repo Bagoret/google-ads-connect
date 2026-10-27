@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from gads.logbook import StopAnalysis  # noqa: E402
+from gads.core.logbook import StopAnalysis  # noqa: E402
 from snapshot import build_search_args, parse_gaql, render_query, run_snapshot, write_snapshot  # noqa: E402
 
 FIX = ROOT / "tests" / "fixtures"
@@ -106,8 +106,8 @@ class UpstreamContractTest(unittest.TestCase):
             self.assertEqual(sent["arguments"]["resource"], "campaign")
             self.assertIn("metrics.cost_micros", sent["arguments"]["fields"])
             self.assertNotIn("query", sent["arguments"])
-            from gads.logbook import RunLog
-            from gads.normalize import extract_rows, load_snapshot
+            from gads.core.logbook import RunLog
+            from gads.core.normalize import extract_rows, load_snapshot
             rows = extract_rows(load_snapshot(path).payload, RunLog())
             self.assertEqual(rows[0]["campaign.id"], 9000000001)
 

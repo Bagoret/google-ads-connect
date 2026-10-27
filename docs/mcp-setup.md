@@ -23,7 +23,7 @@ Tools (v0.0.5): `search_search`, `customers_list_accessible_customers`, `metadat
 `queries/*.gaql` file into those parts and records the exact arguments sent in the snapshot. Results come
 back as `{"result": [ {"campaign.id": …, "metrics.cost_micros": …}, … ]}`. The tests use the upstream tool
 list copied into `tests/fixtures/upstream_golden_tools_list.json`; re-copy it whenever you change the pinned version. Google's documentation lists no write tools. This repo adds two more
-layers: `scripts/gads/mcp_client.py` refuses any tool outside a read-only allowlist, and
+layers: `scripts/gads/connect/mcp_client.py` refuses any tool outside a read-only allowlist, and
 `.claude/settings.json` denies the GoMarble connector in this project.
 
 ## Which OAuth method
@@ -129,7 +129,7 @@ in its vendored `truststore` (and in `packaging`'s wheel-tag code), both of whic
 ```
 
 **What `setup_mac.sh` does about it.** It never uses `ensurepip` or `pipx`. It creates the server's environment
-with `python -m venv --without-pip`, puts a small shim in it (`scripts/gads/macver_shim.py`: when `mac_ver()` is
+with `python -m venv --without-pip`, puts a small shim in it (`scripts/gads/connect/macver_shim.py`: when `mac_ver()` is
 empty on macOS, it reads `ProductVersion` from `SystemVersion.plist` without an XML parser), and runs the pip wheel
 that ships with that Python to install the pinned server. The shim affects only that environment; your Python is
 not modified. The real fix is to update macOS to 26.3 or later; after that the shim does nothing.

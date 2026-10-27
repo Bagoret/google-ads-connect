@@ -11,8 +11,8 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from gads.logbook import RunLog, StopAnalysis  # noqa: E402
-from gads.normalize import apply_field_map, extract_rows, flatten_row, load_field_map, load_snapshot  # noqa: E402
+from gads.core.logbook import RunLog, StopAnalysis  # noqa: E402
+from gads.core.normalize import apply_field_map, extract_rows, flatten_row, load_field_map, load_snapshot  # noqa: E402
 import snapshot  # noqa: E402
 
 FIX = ROOT / "tests" / "fixtures"
@@ -38,7 +38,7 @@ class VerbatimTest(unittest.TestCase):
 
 class CustomerIdTest(unittest.TestCase):
     def test_one_rule_everywhere(self):
-        from gads.ids import parse_customer_id
+        from gads.core.ids import parse_customer_id
         for text in ("123-456-7890", " 123 456 7890 ", "customers/1234567890", "1234567890", "123.456.7890",
                      "(123) 456-7890"):
             self.assertEqual(parse_customer_id(text), "1234567890", text)
@@ -96,12 +96,12 @@ class CleanStopTest(unittest.TestCase):
 
 class ClientDeadlineTest(unittest.TestCase):
     def test_notification_stream_cannot_extend_the_timeout(self):
-        from gads.mcp_client import McpError, McpStdioClient
+        from gads.connect.mcp_client import McpError, McpStdioClient
         client = McpStdioClient(["unused"], timeout_s=0.3)
         client._send = lambda message: None
         for _ in range(1000):
             client._lines.put('{"jsonrpc": "2.0", "method": "notifications/progress"}\n')
-        with mock.patch("gads.mcp_client.time.monotonic", side_effect=[0.0] + [1.0] * 2000):
+        with mock.patch("gads.connect.mcp_client.time.monotonic", side_effect=[0.0] + [1.0] * 2000):
             with self.assertRaises(McpError):
                 client._request("tools/call", {})
         client._stderr.close()

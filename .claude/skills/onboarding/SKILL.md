@@ -56,7 +56,7 @@ only for what is missing.
 2. If the connection works, pull what the account can answer itself (read-only), instead of asking:
    - `scripts/snapshot.py --query customer_settings` → currency, timezone.
    - **Contract gate:** `scripts/inspect_snapshot.py <file>`. If it stops on an unknown shape, report it
-     and stop: `scripts/gads/normalize.py` must be adapted before any analysis.
+     and stop: `scripts/gads/core/normalize.py` must be adapted before any analysis.
    - `campaign_inventory` and `conversion_actions` → draft the tables in `context/account-map.md` and
      `context/measurement.md` (source: MCP snapshot). Ask the person to confirm primary vs secondary meaning.
 3. Ask one grouped message for what the account cannot answer:

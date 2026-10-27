@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from context_status import readiness_markdown, scan_context  # noqa: E402
+from gads.onboarding.context import readiness_markdown, scan_context  # noqa: E402
 
 SAMPLE_BUSINESS = """# Business context
 ## Identity and market

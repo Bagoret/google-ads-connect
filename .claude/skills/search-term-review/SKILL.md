@@ -59,6 +59,7 @@ and propose negative-keyword **candidates**, checked against existing exclusions
 
 ## Validation and stop conditions
 - Missing negatives or keywords snapshot → script exits 2 → stop and ask for the snapshot.
+- Script exit code 3 → `candidates.json` and `review.md` were written but the dashboard page failed and was skipped. Tell the user, keep using the main outputs, and point to the traceback (re-run with `GADS_STRICT=1` to debug). Never present exit 3 as a clean run.
 - Duplicate grain keys, pagination, or unknown shape → stop (script).
 - Brand lists empty → continue, with a prominent caveat.
 

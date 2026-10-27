@@ -8,7 +8,8 @@ it serves is described in `context/business.md`. Data source: **read-only Google
 - `knowledge/` — PPC principles and approved claims
 - `config/` — GAQL field map, campaign classification, review sensitivity thresholds
 - `.claude/skills/` — onboarding, weekly-review, search-term-review, product-review
-- `scripts/` — Python (stdlib) analysis; `python3 -m unittest discover -s tests`
+- `scripts/` — Python (stdlib) analysis; `python3 -m unittest discover -s tests`. Engine components and their
+  allowed dependencies: `docs/architecture.md` (enforced by `tests/test_architecture.py`)
 - `data/raw/` — verbatim MCP/GAQL response snapshots, never modified · `data/processed/` — derived files
 - `queries/` — versioned GAQL query library (the only queries scripts run)
 - `outputs/` — reports and action registers · `decisions/` — approved changes, experiments
@@ -34,7 +35,7 @@ only while business blockers remain.
 8. Never print, store, or commit credentials, tokens, or personal customer data.
 9. **No external account changes.** No writes to Google Ads, Merchant Center,
    GA4, or any ad platform — even if a tool offers it. Output proposals only.
-   Future writes go only through `scripts/gads/changes.py` (see `docs/write-path.md`);
+   Future writes go only through `scripts/gads/changes/pipeline.py` (see `docs/write-path.md`);
    never edit `config/execution.json`.
 10. `decisions/change-log.md` records only changes the user has **approved**,
     not suggestions. Unapproved ideas live in action registers. Run

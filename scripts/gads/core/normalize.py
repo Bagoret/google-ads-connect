@@ -8,9 +8,9 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
-from .logbook import RunLog, StopAnalysis
+from gads.core.logbook import RunLog, StopAnalysis
+from gads.core.files import ROOT
 
-ROOT = Path(__file__).resolve().parents[2]
 MICROS = Decimal(1_000_000)
 
 
@@ -170,13 +170,3 @@ def records_from_snapshot(path: Path, required: set[str], log: RunLog,
         raise StopAnalysis(f"{Path(path).name} has no start/end date range; re-fetch it with scripts/snapshot.py")
     rows = [flatten_row(r) for r in extract_rows(snap.payload, log)]
     return snap, apply_field_map(rows, load_field_map(), required, log)
-
-
-def unique_dir(root: Path, slug: str) -> Path:
-    """Create and return root/slug, adding -2, -3 … if it already exists (never overwrite outputs)."""
-    root.mkdir(parents=True, exist_ok=True)
-    out, n = root / slug, 2
-    while out.exists():
-        out, n = root / f"{slug}-{n}", n + 1
-    out.mkdir()
-    return out

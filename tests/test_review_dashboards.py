@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from gads.viz import fold_top  # noqa: E402
+from gads.ui.viz import fold_top  # noqa: E402
 import product_review  # noqa: E402
 import search_terms  # noqa: E402
 

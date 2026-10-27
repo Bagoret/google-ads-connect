@@ -3,12 +3,10 @@ assign causes. Every action requires approval."""
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-import math
 from decimal import Decimal
 
-from .compare import Period, pct_change
-from .logbook import StopAnalysis
-from .metrics import Totals, derive, fmt
+from gads.core.compare import Period, pct_change
+from gads.core.metrics import Totals, derive, fmt
 
 ACTION_COLUMNS = ("priority", "entity_type", "entity_id", "finding", "supporting_metrics", "proposed_action",
                   "rationale", "confidence", "risk", "approval_required", "validation_plan")
@@ -47,22 +45,6 @@ class ReviewContext:
     source_label: str
     customer_id: str = ""
     currency: str = ""
-
-
-REQUIRED_THRESHOLDS = ("min_clicks_for_ratio",)
-OPTIONAL_THRESHOLDS = ("material_pct_change", "min_spend_zero_conv")
-
-
-def check_thresholds(thresholds: dict) -> dict:
-    """Required values must be non-negative numbers; optional ones may also be null (rule disabled)."""
-    for key in REQUIRED_THRESHOLDS + OPTIONAL_THRESHOLDS:
-        value = thresholds.get(key)
-        if value is None and key in OPTIONAL_THRESHOLDS:
-            continue
-        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
-            raise StopAnalysis(f"config/review_thresholds.json: {key} must be a non-negative number"
-                               + (" or null" if key in OPTIONAL_THRESHOLDS else ""))
-    return thresholds
 
 
 def _summary(t: Totals, period: Period, cur: str) -> str:

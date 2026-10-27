@@ -12,7 +12,7 @@
 
 server-venv installs Google's server (pinned) into its own virtual environment, outside the repo. It never
 runs ensurepip (which breaks on macOS 26.0-26.2 with Homebrew Python, see docs/mcp-setup.md › Troubleshooting);
-it runs the interpreter's bundled pip wheel directly and adds a small mac_ver shim (scripts/gads/macver_shim.py).
+it runs the interpreter's bundled pip wheel directly and adds a small mac_ver shim (scripts/gads/connect/macver_shim.py).
 Both writers create the file private to your user (mode 600), never add a developer token, and back up any
 file they change to <name>.bak-<timestamp> first. Writing an identical entry is a no-op; a different existing
 entry is only replaced with --replace.
@@ -32,16 +32,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gads.files import write_private_json  # noqa: E402
-from gads.ids import parse_customer_id  # noqa: E402
+from gads.core.files import ROOT, write_private_json  # noqa: E402
+from gads.core.ids import parse_customer_id  # noqa: E402
 
-ROOT = Path(__file__).resolve().parent.parent
 SERVER_NAME = "google-ads-mcp"
 SERVER_VERSION = "0.0.5"  # the version this repo's contract tests were built against
 SERVER_SPEC = f"{SERVER_NAME}=={SERVER_VERSION}"
 SERVER_PYTHONS = ((3, 10), (3, 13))  # inclusive; google-ads-mcp needs >=3.10, newer ones may lack grpcio wheels
 DEFAULT_VENV = Path.home() / ".local" / "share" / "google-ads-os" / "mcp-venv"
-SHIM_SOURCE = Path(__file__).resolve().parent / "gads" / "macver_shim.py"
+SHIM_SOURCE = Path(__file__).resolve().parent / "gads" / "connect" / "macver_shim.py"
 SHIM_MODULE = "google_ads_os_macver"
 PROBE = r"""
 import json, platform, sys

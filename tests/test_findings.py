@@ -7,9 +7,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from gads.compare import Period  # noqa: E402
-from gads.findings import ACTION_COLUMNS, Action, ReviewContext, generate_actions  # noqa: E402
-from gads.metrics import Totals  # noqa: E402
+from gads.core.compare import Period  # noqa: E402
+from gads.weekly.findings import ACTION_COLUMNS, Action, ReviewContext, generate_actions  # noqa: E402
+from gads.core.metrics import Totals  # noqa: E402
 
 DEFAULTS = {"min_clicks_for_ratio": 30, "material_pct_change": 20, "min_spend_zero_conv": None}
 CUR = Period(date(2026, 10, 13), date(2026, 10, 19))

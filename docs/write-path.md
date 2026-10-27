@@ -5,14 +5,14 @@
 ## Why writes can't happen today
 1. Google's official MCP server (`googleads/google-ads-mcp`) lists only read tools: `search`,
    `list_accessible_customers`, `get_resource_metadata`.
-2. `scripts/gads/mcp_client.py` refuses any tool outside a read-only allowlist before sending a request.
+2. `scripts/gads/connect/mcp_client.py` refuses any tool outside a read-only allowlist before sending a request.
 3. `config/execution.json` has `"writes_enabled": false`. `.claude/settings.json` denies Claude's Edit/Write
    tools on it; that is best-effort (shell commands are not covered), so it is not the main safeguard.
 4. The only executor is `DisabledExecutor`, which always raises `WritesDisabled`.
 5. `.claude/settings.json` denies the GoMarble connector, which exposes "propose" tools, in this project.
 
 ## The pipeline (built and tested)
-`scripts/gads/changes.py`:
+`scripts/gads/changes/pipeline.py`:
 
 ```
 finding (actions.json) ──► ChangeRequest(proposed) ──► human review ──► approve(fingerprint)

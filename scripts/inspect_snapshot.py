@@ -13,8 +13,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gads.logbook import RunLog, StopAnalysis  # noqa: E402
-from gads.normalize import apply_field_map, detect_grain, extract_rows, flatten_row, load_field_map, load_snapshot  # noqa: E402
+from gads.core.logbook import RunLog, StopAnalysis  # noqa: E402
+from gads.core.normalize import apply_field_map, detect_grain, extract_rows, flatten_row, load_field_map, load_snapshot  # noqa: E402
 
 
 def inspect_snapshot(path: Path) -> dict:
@@ -43,9 +43,15 @@ def inspect_snapshot(path: Path) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     argv = argv if argv is not None else sys.argv[1:]
+    if argv in (["-h"], ["--help"]):
+        print(__doc__)
+        return 0
     if len(argv) != 1:
         print(__doc__, file=sys.stderr)
         return 1
+    if not Path(argv[0]).is_file():
+        print(f"STOP: snapshot not found: {argv[0]}", file=sys.stderr)
+        return 2
     try:
         print(json.dumps(inspect_snapshot(Path(argv[0])), indent=2, default=str))
     except StopAnalysis as exc:

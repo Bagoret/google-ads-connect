@@ -8,7 +8,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from search_terms import classify_brand, find_conflicts, main, negative_blocks, normalize_term, weak_performance  # noqa: E402
+from gads.search_terms.analysis import classify_brand, find_conflicts, negative_blocks, normalize_term, weak_performance  # noqa: E402
+from search_terms import main  # noqa: E402
 
 FIX = ROOT / "tests" / "fixtures"
 LISTS = {"marketplace": ["SynthShop"], "stocked": ["SynthBrand"], "competitor": ["RivalShop"]}
@@ -69,6 +70,11 @@ class WeakPerformanceTest(unittest.TestCase):
         self.assertEqual([f["search_term"] for f in flags], ["a"])
         for f in flags:
             self.assertNotIn("irrelevant", json.dumps(f))
+
+    def test_spend_threshold_flags_low_click_terms(self):
+        recs = [{"search_term": "b", "campaign_id": "1", "clicks": 3, "cost": Decimal("12"), "conversions": Decimal("0")}]
+        flags = weak_performance(recs, {"min_clicks_for_ratio": 30, "min_spend_zero_conv": 10})
+        self.assertEqual([f["search_term"] for f in flags], ["b"])
 
 
 class CliTest(unittest.TestCase):
