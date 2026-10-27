@@ -88,8 +88,10 @@ Never run `--reset` in the copy that holds your own business facts.
    - ask you once, in a single grouped message, for what the account can't tell it.
 3. When the blockers are cleared, say **"weekly review for last week"**.
 
-### Google Ads in Claude Desktop
-Claude Desktop can use the same read-only server: see [`docs/claude-desktop.md`](docs/claude-desktop.md).
+### Google Ads in Claude Desktop, claude.ai and mobile
+- **Desktop only, server on your Mac:** [`docs/claude-desktop.md`](docs/claude-desktop.md).
+- **claude.ai web + Desktop + mobile:** deploy the read-only server to Cloud Run in your own project and add it as a
+  custom connector: [`docs/hosted-connector.md`](docs/hosted-connector.md) (`scripts/deploy_cloud_run.sh`, run in Cloud Shell).
 
 ### Adding other users
 Colleagues, agencies, freelancers or client-side users each connect with their own Google login and
