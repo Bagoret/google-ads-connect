@@ -235,8 +235,8 @@ def render(checks: list[Check]) -> str:
     elif not any(c.name == "customer access" and c.status == "ok" for c in checks):
         lines.append("Next step: run again with --live --customer-id <your account ID>.")
     else:
-        lines.append("Next step: python3 scripts/snapshot.py --query customer_settings --customer-id <ID>, "
-                     "then scripts/inspect_snapshot.py on the file it prints.")
+        lines.append("Next step: python3 scripts/first_connect.py --customer-id <ID> "
+                     "(fetches every query once and checks which features can run).")
     return "\n".join(lines)
 
 

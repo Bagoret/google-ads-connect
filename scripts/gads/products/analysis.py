@@ -7,6 +7,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from gads.core.cli import load_json_file
+from gads.core.contracts import QUERY_REQUIRED
 from gads.core.logbook import RunLog, StopAnalysis
 from gads.core.metrics import Totals, derive, fmt, group_by
 from gads.core.normalize import Snapshot, records_from_snapshot
@@ -81,7 +82,7 @@ class ProductReview:
 def analyse(args) -> ProductReview:
     """args: the product review's options (--products, --supplement, … as attributes)."""
     log = RunLog()
-    snap, records = records_from_snapshot(args.products, {"item_id", "campaign_id", "date", "cost", "clicks"},
+    snap, records = records_from_snapshot(args.products, QUERY_REQUIRED["product_daily"],
                                           log, "product_daily", dated=True)
     if not records:
         raise StopAnalysis("snapshot contains no usable rows")

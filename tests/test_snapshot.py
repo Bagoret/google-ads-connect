@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from gads.core.logbook import StopAnalysis  # noqa: E402
-from snapshot import build_search_args, parse_gaql, render_query, run_snapshot, write_snapshot  # noqa: E402
+from gads.connect.snapshot import build_search_args, parse_gaql, render_query, run_snapshot, write_snapshot  # noqa: E402
 
 FIX = ROOT / "tests" / "fixtures"
 FAKE = [sys.executable, str(ROOT / "tests" / "fake_mcp_server.py")]
@@ -134,19 +134,19 @@ class ServerConfigTest(unittest.TestCase):
 
     def test_env_var_references_expanded(self):
         import os
-        from snapshot import load_server_config
+        from gads.connect.mcp_config import load_server_config
         os.environ["SYNTH_TOKEN_FOR_TEST"] = "abc"
         cmd, env = load_server_config(self.write_cfg({"GOOGLE_ADS_DEVELOPER_TOKEN": "${SYNTH_TOKEN_FOR_TEST}"}))
         self.assertEqual(cmd, ["pipx", "run", "x"])
         self.assertEqual(env["GOOGLE_ADS_DEVELOPER_TOKEN"], "abc")
 
     def test_unset_env_var_stops(self):
-        from snapshot import load_server_config
+        from gads.connect.mcp_config import load_server_config
         with self.assertRaises(StopAnalysis):
             load_server_config(self.write_cfg({"X": "${SYNTH_DEFINITELY_UNSET_VAR}"}))
 
     def test_placeholder_stops(self):
-        from snapshot import load_server_config
+        from gads.connect.mcp_config import load_server_config
         with self.assertRaises(StopAnalysis):
             load_server_config(self.write_cfg({"GOOGLE_PROJECT_ID": "YOUR_PROJECT_ID"}))
 

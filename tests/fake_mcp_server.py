@@ -6,6 +6,8 @@ copied from googleads/google-ads-mcp v0.0.5).
 Env:
   FAKE_FIXTURE  path to a JSON file whose "result" object is returned by tools/call
                 ("result_raw", a JSON string, is sent byte-for-byte instead).
+  FAKE_FIXTURE_MAP  JSON object {resource: fixture path}; tools/call answers with the fixture for the requested
+                resource ("FROM" table), or a tool error if the resource is not listed. Takes precedence.
   FAKE_RECORD   optional path; the tools/call params are written there for assertions.
   FAKE_MODE     "exit_on_call" = write to stderr and exit during tools/call.
 """
@@ -42,7 +44,15 @@ def main():
             if os.environ.get("FAKE_MODE") == "exit_on_call":
                 sys.stderr.write("SYNTH_STDERR_SECRET request details\n")
                 sys.exit(1)
-            with open(os.environ["FAKE_FIXTURE"], encoding="utf-8") as fh:
+            fixture_path = os.environ.get("FAKE_FIXTURE")
+            if os.environ.get("FAKE_FIXTURE_MAP"):
+                resource = msg["params"].get("arguments", {}).get("resource")
+                fixture_path = json.loads(os.environ["FAKE_FIXTURE_MAP"]).get(resource)
+                if not fixture_path:
+                    reply(msg_id, {"isError": True, "content": [{"type": "text", "text":
+                          f"SYNTHETIC tool error: no fixture for resource {resource}"}]})
+                    continue
+            with open(fixture_path, encoding="utf-8") as fh:
                 fixture = json.load(fh)
             if "result_raw" in fixture:  # exact bytes, e.g. floats with more digits than a double holds
                 sys.stdout.write(f'{{"jsonrpc": "2.0", "id": {msg_id}, "result": {fixture["result_raw"]}}}\n')

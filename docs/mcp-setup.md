@@ -103,9 +103,10 @@ so read each prompt. The config writer is `scripts/setup_config.py` (also usable
    It checks `.mcp.json` (no placeholders, ignored by git), the launcher, the credentials file (type,
    refresh token, file permissions, location outside the repo), the server's tool contract, and whether
    your login can see the account. It never prints secret values.
-9. **Contract gate**: `python3 scripts/snapshot.py --query customer_settings --customer-id <ID>`, then
-   `python3 scripts/inspect_snapshot.py <file it printed>`. If the shape is unknown, stop and share the
-   inspect output (never the credentials) so `normalize.py` can be adapted.
+9. **First-connection check**: `python3 scripts/first_connect.py --customer-id <ID>` fetches every query in
+   `queries/` once (read-only), runs the contract gate on each response and reports which features can run
+   (`outputs/first-connect_*/report.md`). The report holds field names, counts and statuses only, so you can share
+   it if something fails. For a single query: `scripts/snapshot.py` then `scripts/inspect_snapshot.py`.
 10. In Claude Code, run `/mcp` to confirm the server is connected, then say **"run onboarding"**.
 
 ## Troubleshooting

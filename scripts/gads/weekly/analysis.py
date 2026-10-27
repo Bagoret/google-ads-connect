@@ -11,6 +11,7 @@ from gads.core.thresholds import load_thresholds
 from gads.weekly.findings import ReviewContext, generate_actions
 from gads.core.cli import add_common_args, load_json_file
 from gads.core.compare import Period, equivalence
+from gads.core.contracts import QUERY_REQUIRED
 from gads.core.logbook import RunLog, StopAnalysis
 from gads.core.metrics import Totals, aggregate, group_by
 from gads.core.normalize import Snapshot, detect_grain, records_from_snapshot
@@ -18,7 +19,7 @@ from gads.core.files import ROOT
 from gads.core.validate import (account_timezone, check_date_coverage, check_single_currency, check_unique,
                                 parse_now, partial_data_caveats)
 
-REQUIRED = {"campaign_id", "date", "cost", "clicks"}
+REQUIRED = QUERY_REQUIRED["campaign_daily"]
 
 
 def add_weekly_args(ap: argparse.ArgumentParser) -> argparse.ArgumentParser:

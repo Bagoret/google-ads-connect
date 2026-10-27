@@ -21,6 +21,7 @@ and tested on synthetic data. **No ad account is connected yet.**
 | One-command Mac setup | `onboarding` | `scripts/setup_mac.sh` (+ `scripts/setup_config.py`) | server install (own venv), sign-in, `.mcp.json`, connection check, optional Claude Desktop entry |
 | Track proposed changes | – | `scripts/change_requests.py` | requests with approval history + `outputs/change-requests/status.html` |
 | Fetch data (read-only) | all | `scripts/snapshot.py`, `scripts/inspect_snapshot.py` | `data/raw/*.json` |
+| First-connection check | `onboarding` | `scripts/first_connect.py` | every query fetched and contract-checked; `report.md` with feature readiness (shareable) |
 
 Sample output, generated from labelled synthetic data: [`docs/examples/`](docs/examples/).
 
@@ -83,7 +84,7 @@ Never run `--reset` in the copy that holds your own business facts.
 2. Open Claude Code in this folder and say **"run onboarding"**. Claude will:
    - list the missing context (blockers first);
    - read currency, timezone, campaigns and conversion actions from the account (read-only);
-   - run the **contract gate** (`inspect_snapshot.py`) on the first real response;
+   - run the **first-connection check** (`first_connect.py`): every query fetched once and contract-checked;
    - ask you once, in a single grouped message, for what the account can't tell it.
 3. When the blockers are cleared, say **"weekly review for last week"**.
 

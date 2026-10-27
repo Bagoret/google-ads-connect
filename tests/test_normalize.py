@@ -118,7 +118,7 @@ class InspectCliTest(unittest.TestCase):
 
 class InspectTest(unittest.TestCase):
     def test_inspect_reports_shape_grain_and_ranges(self):
-        from inspect_snapshot import inspect_snapshot
+        from gads.core.inspect import inspect_snapshot
         info = inspect_snapshot(FIX / "synthetic_campaign_daily_camel.json")
         self.assertEqual(info["rows"], 2)
         self.assertEqual(info["date_range"], ["2026-10-01", "2026-10-02"])
