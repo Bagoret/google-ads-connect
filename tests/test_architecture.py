@@ -31,7 +31,7 @@ ALLOWED = {
     "core": set(),
     "ui": {"core"},
     "connect": {"core"},
-    "onboarding": {"core"},
+    "onboarding": {"core", "connect"},
     "changes": {"core", "ui"},
     "weekly": {"core", "ui"},
     "search_terms": {"core", "ui"},
@@ -40,7 +40,7 @@ ALLOWED = {
 }
 # feature -> its computation modules (no pages/reports/ui inside these)
 COMPUTE = {"weekly": {"analysis", "findings"}, "search_terms": {"analysis"}, "products": {"analysis"},
-           "changes": {"pipeline", "store"}, "onboarding": {"context"}, "ai": {"insights"}}
+           "changes": {"pipeline", "store"}, "onboarding": {"context", "first_connect"}, "ai": {"insights"}}
 
 
 def gads_imports(path: Path) -> list[tuple[str, int]]:

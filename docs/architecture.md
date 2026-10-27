@@ -26,7 +26,7 @@ feature, the computation is kept apart from pages and reports. `tests/test_archi
 | **search_terms** | `analysis` (brand classes, weak terms, conflicts) · `report` (Markdown) · `page` (HTML) | `gads/search_terms/` | core, ui |
 | **products** | `analysis` (item performance, margin join) · `report` (Markdown) · `page` (HTML) | `gads/products/` | core, ui |
 | **changes** | `pipeline` (approval-gated requests, writes disabled) · `store` (saved requests) · `page` (status page) | `gads/changes/` | core, ui |
-| **onboarding** | `context` (which business facts are still UNKNOWN) | `gads/onboarding/` | core |
+| **onboarding** | `context` (which business facts are still UNKNOWN) · `first_connect` (fetch every query once and check its shape) · `first_connect_report` | `gads/onboarding/` | core, connect |
 | **ai** | `insights` (verified `{{fact.key}}` text) · `dashboard_section` (facts.json, AI and Ask sections) | `gads/ai/` | core, ui, weekly |
 
 **The three rules** (a test fails if one is broken):

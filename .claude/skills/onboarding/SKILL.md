@@ -54,9 +54,12 @@ only for what is missing.
 ## Part 2 — business setup (new business, or blockers remain)
 1. `python3 scripts/context_status.py`; read `outputs/onboarding/data-readiness.md`.
 2. If the connection works, pull what the account can answer itself (read-only), instead of asking:
-   - `scripts/snapshot.py --query customer_settings` → currency, timezone.
-   - **Contract gate:** `scripts/inspect_snapshot.py <file>`. If it stops on an unknown shape, report it
-     and stop: `scripts/gads/core/normalize.py` must be adapted before any analysis.
+   - **First-connection check:** `python3 scripts/first_connect.py --customer-id <ID>` (once per account, and after
+     any Google change). It fetches every library query, runs the contract gate on each, and writes
+     `outputs/first-connect_*/report.md` with feature readiness. Report BLOCKED features and their reasons; for a
+     FAIL on shape or missing fields, stop: `scripts/gads/core/normalize.py` or `config/field_map.json` must be
+     adapted before that feature is used. NO DATA is not an error (e.g. no Shopping campaigns).
+   - From its snapshots in `data/raw/`: `customer_settings` → currency, timezone.
    - `campaign_inventory` and `conversion_actions` → draft the tables in `context/account-map.md` and
      `context/measurement.md` (source: MCP snapshot). Ask the person to confirm primary vs secondary meaning.
 3. Ask one grouped message for what the account cannot answer:

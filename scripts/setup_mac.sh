@@ -208,7 +208,8 @@ fi
 
 echo
 if [ "$CHECK" = 0 ]; then
-  echo "Done. Connection check passed. Open Claude Code in this folder, run /mcp, then say \"run onboarding\"."
+  echo "Done. Connection check passed. Next: $PY scripts/first_connect.py --customer-id $CID"
+  echo "(checks every query once), then open Claude Code in this folder, run /mcp and say \"run onboarding\"."
 else
   echo "Setup files are written, but the connection check reported a problem (see the list above)."
   echo "Fix the item marked fail, then re-run: $PY scripts/check_connection.py --live --customer-id $CID"
