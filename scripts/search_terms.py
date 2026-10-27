@@ -17,7 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from gads.analysis.search_terms import COVERAGE_NOTE, analyse  # noqa: E402
-from gads.core.cli import add_common_args, run_cli  # noqa: E402
+from gads.core.cli import add_common_args, run_cli, write_optional  # noqa: E402
 from gads.core.normalize import unique_dir  # noqa: E402
 from gads.present.search_terms_page import render_search_dashboard, render_search_markdown  # noqa: E402
 
@@ -34,8 +34,8 @@ def run(args) -> Path:
         "conflicts": r.conflicts, "log": r.log.to_dict(),
     }, indent=2, ensure_ascii=False), encoding="utf-8")
     (out / "review.md").write_text(render_search_markdown(r), encoding="utf-8")
-    (out / "dashboard.html").write_text(
-        render_search_dashboard(snap, r.currency, r.caveats, r.rows, r.conflicts, r.log), encoding="utf-8")
+    write_optional(out / "dashboard.html",
+                   lambda: render_search_dashboard(snap, r.currency, r.caveats, r.rows, r.conflicts, r.log))
     return out
 
 

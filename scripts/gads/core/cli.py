@@ -28,6 +28,17 @@ def load_json_file(path: Path, what: str):
         raise StopAnalysis(f"{what} {path} is not valid JSON")
 
 
+def write_optional(path: Path, render) -> bool:
+    """Write an optional output (e.g. a dashboard page). A failure is reported and skipped so the main outputs
+    already written stay valid. Returns True if written."""
+    try:
+        path.write_text(render(), encoding="utf-8")
+        return True
+    except Exception as exc:  # noqa: BLE001 - deliberate fault isolation
+        print(f"Warning: {path.name}: dashboard page skipped ({type(exc).__name__}: {exc})", file=sys.stderr)
+        return False
+
+
 def run_cli(fn, args) -> int:
     """Run fn(args); print its result path, or the STOP reason with exit code 2 (nothing written)."""
     try:
