@@ -150,7 +150,7 @@ class ChangeRequestParsingTest(unittest.TestCase):
 
 class ActiveKeywordsTest(unittest.TestCase):
     def test_paused_and_negative_keywords_excluded_from_conflict_check(self):
-        from search_terms import active_keywords
+        from gads.analysis.search_terms import active_keywords
         rows = [{"keyword_text": "a", "negative": "false", "criterion_status": "ENABLED"},
                 {"keyword_text": "b", "negative": "false", "criterion_status": "PAUSED"},
                 {"keyword_text": "c", "negative": "true", "criterion_status": "ENABLED"},

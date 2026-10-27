@@ -10,7 +10,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from gads.core.logbook import RunLog, StopAnalysis  # noqa: E402
 from gads.core.metrics import Totals  # noqa: E402
-from product_review import join_supplement, main, normalize_item_id  # noqa: E402
+from gads.analysis.products import join_supplement, normalize_item_id  # noqa: E402
+from product_review import main  # noqa: E402
 
 FIX = ROOT / "tests" / "fixtures"
 
