@@ -12,7 +12,7 @@
 
 server-venv installs Google's server (pinned) into its own virtual environment, outside the repo. It never
 runs ensurepip (which breaks on macOS 26.0-26.2 with Homebrew Python, see docs/mcp-setup.md › Troubleshooting);
-it runs the interpreter's bundled pip wheel directly and adds a small mac_ver shim (scripts/gads/macver_shim.py).
+it runs the interpreter's bundled pip wheel directly and adds a small mac_ver shim (scripts/gads/connect/macver_shim.py).
 Both writers create the file private to your user (mode 600), never add a developer token, and back up any
 file they change to <name>.bak-<timestamp> first. Writing an identical entry is a no-op; a different existing
 entry is only replaced with --replace.

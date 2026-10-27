@@ -44,7 +44,7 @@ context/                  business facts — UNKNOWN until you supply them
 knowledge/                PPC principles, approved claims
 config/                   field map, thresholds, campaign classification, brand lists, execution kill switch
 queries/                  versioned read-only GAQL
-scripts/                  CLIs + scripts/gads/ engine (standard library only)
+scripts/                  thin CLIs + scripts/gads/ engine in separate components (docs/architecture.md)
 .claude/skills/           onboarding, weekly-review, search-term-review, product-review
 .claude/settings.json     best-effort denies (GoMarble connector; Edit/Write tools on data/raw and the kill switch)
 data/raw, data/processed  account data (gitignored)
@@ -98,7 +98,7 @@ credentials, ideally with **Read-only** Google Ads access. See
 ## Taking action — future
 The system is designed to move from analysis to action **behind approval gates**. The pipeline exists;
 writing is disabled. See [`docs/write-path.md`](docs/write-path.md).
-- `scripts/gads/changes.py` models typed change requests (pause, budget, targets, negatives), with
+- `scripts/gads/changes/pipeline.py` models typed change requests (pause, budget, targets, negatives), with
   fingerprinted approval: editing a request after approval invalidates the approval.
 - `config/execution.json` ships with `"writes_enabled": false`, and the only executor is `DisabledExecutor`.
 - Google's MCP server is read-only, so a future executor would need the Google Ads API (an install you
