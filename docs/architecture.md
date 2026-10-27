@@ -30,18 +30,20 @@ script.
 ## Fault isolation (what keeps working when something breaks)
 | If this breaks… | …this still works |
 |---|---|
-| `ai` (bug, bad `insights.json`) | The dashboard builds with "AI analysis is unavailable"; the weekly report is untouched |
+| A bad or invalid `insights.json` | Only the insights section is replaced by a notice; `facts.json`, the Ask box and the rest of the dashboard work |
+| The `ai` component itself | The dashboard builds with "AI analysis is unavailable"; the weekly report is untouched |
 | A page renderer in `present` (search-term or product dashboard) | `candidates.json` / `products.json` and `review.md` are still written; the page is skipped with a warning |
 | `present` or `ai` | All of `analysis` (weekly, search terms, products) and its numbers |
 | `analysis` | Fetching data (`connect`), onboarding (`setup`), change requests (`changes`) |
+| The change-request status page (`present`) | `propose`, `approve`, `reject`, `list` (only `view` loads the page code) |
 | `connect` | Every analysis on snapshots already saved in `data/raw/` |
 | `core` | Nothing: it is the foundation, so it is kept small and fully tested |
 
 ## Fixing one component
 1. Find the component in the table above; the fix stays inside its folder.
-2. Run its tests, then the boundary tests:
+2. Run its tests, then the boundary and lint tests:
    ```bash
-   python3 -m unittest tests.test_architecture            # boundaries + isolation
+   python3 -m unittest tests.test_architecture tests.test_lint   # boundaries, isolation, undefined names
    python3 -m unittest discover -s tests                  # everything
    ```
    Tests per component: core → `test_normalize`, `test_metrics`, `test_compare`, `test_validate`;

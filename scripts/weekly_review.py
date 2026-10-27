@@ -17,8 +17,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gads.analysis.weekly import Review, build_review  # noqa: E402,F401  (re-exported for the dashboard and tests)
-from gads.core.cli import add_common_args, run_cli  # noqa: E402
+from gads.analysis.weekly import add_weekly_args, build_review  # noqa: E402
+from gads.core.cli import run_cli  # noqa: E402
 from gads.present.report import render_report, write_outputs  # noqa: E402
 
 
@@ -30,13 +30,8 @@ def run_review(args: argparse.Namespace) -> Path:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--snapshot", type=Path, required=True)
-    ap.add_argument("--current", required=True, help="YYYY-MM-DD:YYYY-MM-DD")
-    ap.add_argument("--previous", help="YYYY-MM-DD:YYYY-MM-DD")
-    ap.add_argument("--target-roas")
-    ap.add_argument("--target-cpa")
-    return add_common_args(ap)
+    return add_weekly_args(argparse.ArgumentParser(description=__doc__,
+                                                   formatter_class=argparse.RawDescriptionHelpFormatter))
 
 
 def main(argv: list[str] | None = None) -> int:

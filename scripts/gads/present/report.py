@@ -9,7 +9,7 @@ from gads.analysis.weekly import ReportData
 from gads.analysis.findings import ACTION_COLUMNS, Action, ReviewContext
 from gads.core.logbook import RunLog
 from gads.core.metrics import Totals, derive, fmt
-from gads.core.normalize import unique_dir
+from gads.core.files import unique_dir
 
 CANNOT_TELL = [
     "Why a metric changed. Changes are observed; causes need change history, auction data, site and stock checks.",

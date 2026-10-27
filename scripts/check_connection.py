@@ -28,7 +28,7 @@ from gads.connect.mcp_client import McpError, McpStdioClient, extract_payload  #
 from gads.core.ids import parse_customer_id  # noqa: E402
 from gads.connect.mcp_config import STRUCTURED_PARAMS, find_search_tool, load_server_config  # noqa: E402
 
-ROOT = Path(__file__).resolve().parent.parent
+from gads.core.paths import ROOT  # noqa: E402
 SETUP = "see docs/mcp-setup.md"
 CREDENTIAL_TYPES = {"authorized_user", "service_account", "impersonated_service_account", "external_account"}
 ACCESSIBLE_TOOL_NAMES = ("customers_list_accessible_customers", "list_accessible_customers")

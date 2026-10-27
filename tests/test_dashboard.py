@@ -88,7 +88,7 @@ class DashboardTest(unittest.TestCase):
         self.assertGreaterEqual(html.count("<details"), 2)
 
     def test_x_ticks_end_on_last_day_without_crowding(self):
-        from dashboard import _tick_indices
+        from gads.present.weekly_dashboard import _tick_indices
         for n in range(1, 120):
             ticks = _tick_indices(n)
             self.assertEqual((ticks[0], ticks[-1]), (0, n - 1))

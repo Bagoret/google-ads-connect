@@ -35,7 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gads.core.files import write_private_json  # noqa: E402
 from gads.core.ids import parse_customer_id  # noqa: E402
 
-ROOT = Path(__file__).resolve().parent.parent
+from gads.core.paths import ROOT  # noqa: E402
 SERVER_NAME = "google-ads-mcp"
 SERVER_VERSION = "0.0.5"  # the version this repo's contract tests were built against
 SERVER_SPEC = f"{SERVER_NAME}=={SERVER_VERSION}"

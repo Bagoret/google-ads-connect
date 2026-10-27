@@ -12,6 +12,7 @@ Exit code 2 = analysis stopped (reason printed); nothing is written in that case
 """
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from datetime import datetime, timezone
@@ -20,11 +21,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gads.analysis.weekly import build_review  # noqa: E402
+from gads.analysis.weekly import add_weekly_args, build_review  # noqa: E402
 from gads.core.logbook import StopAnalysis  # noqa: E402
-from gads.core.normalize import unique_dir  # noqa: E402
-from gads.present.weekly_dashboard import _tick_indices, render_dashboard  # noqa: E402,F401
-from weekly_review import build_parser  # noqa: E402
+from gads.core.files import unique_dir  # noqa: E402
+from gads.present.weekly_dashboard import render_dashboard  # noqa: E402
 
 AI_UNAVAILABLE = ('<section class="card"><h2>AI analysis</h2><p class="muted">AI analysis is unavailable for this page '
                   '({}). The rest of the dashboard is unaffected.</p></section>')
@@ -41,9 +41,13 @@ def ai_parts(review, insights_path: Path | None) -> tuple[dict | None, str, str]
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = build_parser()
+    parser = add_weekly_args(argparse.ArgumentParser(description=__doc__,
+                                                     formatter_class=argparse.RawDescriptionHelpFormatter))
     parser.add_argument("--insights", type=Path, help="insights.json written by Claude (validated before display)")
     args = parser.parse_args(argv)
+    if args.insights and not args.insights.is_file():
+        print(f"STOP: --insights file not found: {args.insights}", file=sys.stderr)
+        return 2
     try:
         review = build_review(args)
     except StopAnalysis as exc:

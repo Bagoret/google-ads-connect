@@ -17,9 +17,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gads.analysis.products import analyse, join_supplement, normalize_item_id  # noqa: E402,F401
+from gads.analysis.products import analyse  # noqa: E402
 from gads.core.cli import add_common_args, run_cli, write_optional  # noqa: E402
-from gads.core.normalize import unique_dir  # noqa: E402
+from gads.core.files import unique_dir  # noqa: E402
 from gads.present.products_page import render_product_dashboard, render_product_markdown  # noqa: E402
 
 
@@ -36,7 +36,7 @@ def run(args) -> Path:
     (out / "review.md").write_text(render_product_markdown(r), encoding="utf-8")
     write_optional(out / "dashboard.html",
                    lambda: render_product_dashboard(snap, r.currency, r.caveats, r.records, r.joined, r.products,
-                                                    r.definition, r.only_perf, r.only_supp, r.log))
+                                                    r.definition, r.only_perf, r.only_supp, r.log), "dashboard page")
     return out
 
 

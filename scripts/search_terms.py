@@ -18,10 +18,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from gads.analysis.search_terms import COVERAGE_NOTE, analyse  # noqa: E402
 from gads.core.cli import add_common_args, run_cli, write_optional  # noqa: E402
-from gads.core.normalize import unique_dir  # noqa: E402
+from gads.core.files import unique_dir  # noqa: E402
 from gads.present.search_terms_page import render_search_dashboard, render_search_markdown  # noqa: E402
 
-ROOT = Path(__file__).resolve().parent.parent
+from gads.core.paths import ROOT  # noqa: E402
 
 
 def run(args) -> Path:
@@ -35,7 +35,7 @@ def run(args) -> Path:
     }, indent=2, ensure_ascii=False), encoding="utf-8")
     (out / "review.md").write_text(render_search_markdown(r), encoding="utf-8")
     write_optional(out / "dashboard.html",
-                   lambda: render_search_dashboard(snap, r.currency, r.caveats, r.rows, r.conflicts, r.log))
+                   lambda: render_search_dashboard(snap, r.currency, r.caveats, r.rows, r.conflicts, r.log), "dashboard page")
     return out
 
 

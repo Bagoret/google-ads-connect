@@ -2,12 +2,14 @@
 segment, and generate rule-based findings. No rendering here; see gads.present.report and dashboard pages."""
 from __future__ import annotations
 
+import argparse
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
+from pathlib import Path
 
 from gads.analysis.config import load_thresholds
 from gads.analysis.findings import ReviewContext, generate_actions
-from gads.core.cli import load_json_file
+from gads.core.cli import add_common_args, load_json_file
 from gads.core.compare import Period, equivalence
 from gads.core.logbook import RunLog, StopAnalysis
 from gads.core.metrics import Totals, aggregate, group_by
@@ -17,6 +19,16 @@ from gads.core.validate import (account_timezone, check_date_coverage, check_sin
                                 parse_now, partial_data_caveats)
 
 REQUIRED = {"campaign_id", "date", "cost", "clicks"}
+
+
+def add_weekly_args(ap: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    """The weekly review's inputs as command-line flags (shared by weekly_review.py and dashboard.py)."""
+    ap.add_argument("--snapshot", type=Path, required=True)
+    ap.add_argument("--current", required=True, help="YYYY-MM-DD:YYYY-MM-DD")
+    ap.add_argument("--previous", help="YYYY-MM-DD:YYYY-MM-DD")
+    ap.add_argument("--target-roas")
+    ap.add_argument("--target-cpa")
+    return add_common_args(ap)
 
 
 @dataclass

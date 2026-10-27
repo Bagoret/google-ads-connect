@@ -12,7 +12,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from gads.analysis.findings import check_thresholds, generate_actions  # noqa: E402
 from gads.core.logbook import StopAnalysis  # noqa: E402
-from weekly_review import build_parser, build_review, main as weekly_main  # noqa: E402
+from gads.analysis.weekly import build_review  # noqa: E402
+from weekly_review import build_parser, main as weekly_main  # noqa: E402
 
 FIX = ROOT / "tests" / "fixtures"
 TWO_WEEKS = FIX / "synthetic_weekly_two_weeks.json"

@@ -4,6 +4,7 @@ dashboard.py builds these behind a guard: if anything here fails, the rest of th
 from __future__ import annotations
 
 import json
+import sys
 from html import escape
 from pathlib import Path
 
@@ -86,7 +87,19 @@ def facts_document(review: Review) -> dict:
             "synthetic": review.data.snapshot.synthetic}
 
 
+INSIGHTS_UNAVAILABLE = ('<section class="card"><h2>AI analysis</h2><p class="muted">The AI insights file could not be '
+                        'used ({}); run scripts/check_insights.py on it. The Ask box below still works.</p></section>')
+
+
 def build(review: Review, insights_path: Path | None) -> tuple[dict, str, str]:
-    """(facts document, HTML for the AI analysis + Ask sections, Ask script)."""
+    """(facts document, HTML for the AI analysis + Ask sections, Ask script).
+
+    The insights file is outside input, so a problem with it only replaces the insights section: facts.json and the
+    Ask box still work."""
     facts_doc = facts_document(review)
-    return facts_doc, f"{ai_section(insights_path, facts_doc['facts'])}\n{ASK_SECTION}", ASK_JS
+    try:
+        insights_html = ai_section(insights_path, facts_doc["facts"])
+    except Exception as exc:  # noqa: BLE001 - a bad insights file must not take facts.json or the Ask box with it
+        print(f"Warning: AI insights skipped ({type(exc).__name__}: {exc})", file=sys.stderr)
+        insights_html = INSIGHTS_UNAVAILABLE.format(escape(type(exc).__name__))
+    return facts_doc, f"{insights_html}\n{ASK_SECTION}", ASK_JS

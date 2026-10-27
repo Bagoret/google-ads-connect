@@ -1,4 +1,4 @@
-"""Writing small private files (profiles, MCP config) atomically with owner-only permissions."""
+"""File helpers: small private files written atomically (mode 600), and never-overwriting output folders."""
 from __future__ import annotations
 
 import json
@@ -21,3 +21,13 @@ def write_private_json(path: Path, data) -> None:
     except BaseException:
         Path(tmp).unlink(missing_ok=True)
         raise
+
+
+def unique_dir(root: Path, slug: str) -> Path:
+    """Create and return root/slug, adding -2, -3 … if it already exists (never overwrite outputs)."""
+    root.mkdir(parents=True, exist_ok=True)
+    out, n = root / slug, 2
+    while out.exists():
+        out, n = root / f"{slug}-{n}", n + 1
+    out.mkdir()
+    return out

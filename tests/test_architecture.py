@@ -58,11 +58,17 @@ class BoundaryTest(unittest.TestCase):
     def test_components_only_import_allowed_components(self):
         violations = []
         for component, allowed in ALLOWED.items():
-            for path in (GADS / component).glob("*.py"):
+            for path in (GADS / component).rglob("*.py"):
                 for target, line in gads_imports(path):
                     if target != component and target not in allowed:
                         violations.append(f"{path.relative_to(ROOT)}:{line} imports gads.{target}")
         self.assertEqual(violations, [])
+
+    def test_no_relative_imports(self):
+        # relative imports ("from ..present import x") would slip past the component check; use gads.<component>
+        bad = [f"{p.relative_to(ROOT)}:{n.lineno}" for p in GADS.rglob("*.py")
+               for n in ast.walk(ast.parse(p.read_text())) if isinstance(n, ast.ImportFrom) and n.level]
+        self.assertEqual(bad, [])
 
     def test_components_never_import_command_line_scripts(self):
         scripts = {p.stem for p in SCRIPTS.glob("*.py")}
@@ -78,7 +84,9 @@ class BoundaryTest(unittest.TestCase):
     def test_dashboard_loads_the_ai_component_only_behind_its_guard(self):
         tree = ast.parse((SCRIPTS / "dashboard.py").read_text())
         top = [n for n in tree.body if isinstance(n, (ast.Import, ast.ImportFrom))]
-        self.assertFalse([n for n in top if isinstance(n, ast.ImportFrom) and (n.module or "").startswith("gads.ai")])
+        names = [n.module or "" for n in top if isinstance(n, ast.ImportFrom)]
+        names += [a.name for n in top if isinstance(n, ast.Import) for a in n.names]
+        self.assertFalse([m for m in names if m == "gads.ai" or m.startswith("gads.ai.")])
 
 
 BLOCKER = """
@@ -98,7 +106,9 @@ def import_with_blocked(blocked: list[str], modules: list[str]) -> subprocess.Co
 
 
 def modules_of(component: str) -> list[str]:
-    return [f"gads.{component}.{p.stem}" for p in (GADS / component).glob("*.py") if p.stem != "__init__"]
+    base = GADS / component
+    return [".".join(("gads", component, *p.relative_to(base).with_suffix("").parts))
+            for p in base.rglob("*.py") if p.stem != "__init__"]
 
 
 class IndependenceTest(unittest.TestCase):
@@ -129,6 +139,22 @@ print(review.ctx.account["current"].cost == __import__("decimal").Decimal("273")
         self.assertEqual(r.stdout.strip(), "True")
 
 
+class ChangeRequestIsolationTest(unittest.TestCase):
+    def test_propose_and_list_work_without_the_presentation_component(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            code = BLOCKER.format(blocked=["gads.present", "gads.ai", "gads.analysis"], scripts=str(SCRIPTS)) + f"""
+import change_requests
+common = ["--requests-dir", {tmp!r} + "/req", "--change-log", {tmp!r} + "/log.md", "--config", {tmp!r} + "/x.json"]
+assert change_requests.main(["propose", "--operation", "pause_campaign", "--customer-id", "900-000-0000",
+                             "--param", "campaign_id=9000000001", "--rationale", "SYNTHETIC", "--evidence", "e",
+                             *common]) == 0
+assert change_requests.main(["list", *common]) == 0
+"""
+            r = subprocess.run([sys.executable, "-I", "-c", code], capture_output=True, text=True, timeout=60)
+            self.assertEqual(r.returncode, 0, r.stderr[-800:])
+            self.assertIn("pause_campaign", r.stdout)
+
+
 class FaultIsolationTest(unittest.TestCase):
     """A failure in an optional part leaves the main outputs intact."""
     WEEKLY = ["--snapshot", str(ROOT / "tests" / "fixtures" / "synthetic_weekly_two_weeks.json"),
@@ -149,15 +175,29 @@ class FaultIsolationTest(unittest.TestCase):
             self.assertFalse((out / "facts.json").exists())
         self.assertIn("AI analysis skipped", err.getvalue())
 
-    def test_invalid_insights_file_does_not_stop_the_dashboard(self):
+    def test_invalid_insights_file_only_replaces_the_insights_section(self):
         import dashboard
         with tempfile.TemporaryDirectory() as tmp:
             bad = Path(tmp) / "insights.json"
             bad.write_text("{not json")
-            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as err:
                 code = dashboard.main(self.WEEKLY + ["--insights", str(bad), "--out", tmp + "/o"])
+            out = next(Path(tmp, "o").iterdir())
+            html = (out / "index.html").read_text()
             self.assertEqual(code, 0)
-            self.assertIn("AI analysis is unavailable", next(Path(tmp, "o").glob("*/index.html")).read_text())
+            self.assertIn("insights file could not be used", html)
+            self.assertIn('id="ask"', html)                  # the Ask box still works
+            self.assertTrue((out / "facts.json").exists())   # and has its facts
+            self.assertIn("AI insights skipped", err.getvalue())
+
+    def test_missing_insights_file_stops_before_writing(self):
+        import dashboard
+        with tempfile.TemporaryDirectory() as tmp:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as err:
+                code = dashboard.main(self.WEEKLY + ["--insights", tmp + "/nope.json", "--out", tmp + "/o"])
+            self.assertEqual(code, 2)
+            self.assertIn("--insights file not found", err.getvalue())
+            self.assertFalse(Path(tmp, "o").exists())
 
     def test_broken_page_renderer_keeps_review_data_and_markdown(self):
         import product_review
@@ -182,7 +222,7 @@ class FaultIsolationTest(unittest.TestCase):
                 self.assertTrue((out / data_file).exists())
                 self.assertTrue((out / "review.md").exists())
                 self.assertFalse((out / "dashboard.html").exists())
-                self.assertIn("dashboard page skipped", err.getvalue())
+                self.assertIn("(dashboard page) skipped", err.getvalue())
                 json.loads((out / data_file).read_text())
 
 

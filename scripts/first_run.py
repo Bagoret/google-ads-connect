@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gads.setup.context import scan_context  # noqa: E402
 from gads.core.files import write_private_json  # noqa: E402
 
-ROOT = Path(__file__).resolve().parent.parent
+from gads.core.paths import ROOT  # noqa: E402
 RELATIONSHIPS = {"owner", "employee", "agency", "freelancer", "consultant", "client", "other"}
 ACCESS_LEVELS = {"admin", "standard", "read_only", "billing", "email_only", "none", "unknown"}
 USES = {"weekly-review", "search-term-review", "product-review", "onboarding", "explore"}
