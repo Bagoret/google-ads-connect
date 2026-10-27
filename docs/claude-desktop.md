@@ -42,7 +42,6 @@ You analyse Google Ads through the read-only google-ads-mcp tools.
 Other connectors on your Claude account (for example GoMarble, which can propose changes) are separate from this
 server; this project blocks GoMarble only inside Claude Code.
 
-## Later: claude.ai web and mobile
-That needs Google's server deployed with its OAuth proxy (e.g. on Google Cloud Run, see the upstream README) and
-added as a custom connector in claude.ai. It means running and securing a public endpoint; this repo does not
-set that up yet.
+## claude.ai web and mobile
+Use the hosted connector instead: [`docs/hosted-connector.md`](hosted-connector.md) deploys Google's server to Cloud Run
+in your project and adds it to claude.ai as a custom connector, which also appears in Desktop and mobile.

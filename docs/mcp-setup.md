@@ -119,10 +119,11 @@ Never share your credentials file, refresh token, or `.mcp.json`.
 `GOOGLE_ADS_LOGIN_CUSTOMER_ID` to their manager ID. Agree in writing on what they may change. This repo
 is read-only, but their Google Ads access level decides what they can do elsewhere.
 
-### Option B: a shared server (later)
-One server (e.g. Cloud Run with the OAuth proxy, see the upstream README) holds the OAuth client secret and
-developer token; each user adds its URL in Claude and signs in with Google. Users need no gcloud and no
-secrets, and this is the route for claude.ai web or mobile. This repo's scripts do not support it yet.
+### Option B: a shared server (claude.ai connector)
+One server (Cloud Run with the OAuth proxy: [`docs/hosted-connector.md`](hosted-connector.md)) holds the Web OAuth
+client secret; each user adds its URL as a custom connector in Claude and signs in with Google. Users need no gcloud and
+no secrets, and this is the route for claude.ai web, Desktop and mobile chats. This repo's scripts (reviews, dashboards)
+still use the local server (option A).
 
 ### Removing a user
 1. Remove their Google Ads access (Admin → Access and security). This alone stops their data access.
