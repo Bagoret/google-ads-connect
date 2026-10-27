@@ -367,8 +367,8 @@ def main(argv: list[str] | None = None) -> int:
             note = " (previous version backed up next to it)" if existed else ""
             print(f"Added '{SERVER_NAME}' to {args.config}{note}. Restart Claude Desktop.")
         return 0
-    except NeedsReplace as exc:
-        print(f"STOP: {exc}", file=sys.stderr)
+    except NeedsReplace as exc:  # not an error: callers (setup_mac.sh) ask before passing --replace
+        print(f"Note: {exc}", file=sys.stderr)
         return 3
     except SetupError as exc:
         print(f"STOP: {exc}", file=sys.stderr)

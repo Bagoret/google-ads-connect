@@ -1,3 +1,5 @@
+import contextlib
+import io
 import json
 import os
 import stat
@@ -184,7 +186,11 @@ class CliTest(Fixture):
         self.assertEqual(main(["mcp-json", "--repo", str(self.repo), *common]), 0)
         self.assertTrue((self.repo / ".mcp.json").exists())
         self.assertEqual(main(["mcp-json", "--repo", str(self.repo), *common]), 0)  # identical: nothing to do
-        self.assertEqual(main(["mcp-json", "--repo", str(self.repo), *common[:-1], "other-project-1"]), 3)  # needs --replace
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            code = main(["mcp-json", "--repo", str(self.repo), *common[:-1], "other-project-1"])
+        self.assertEqual(code, 3)  # needs --replace
+        self.assertNotIn("STOP", err.getvalue())  # a question follows in setup_mac.sh, not a stop
         self.assertEqual(main(["customer-id", "123-456-7890"]), 0)
         self.assertEqual(main(["customer-id", "12"]), 2)
         self.assertEqual(main(["project-id", "shaped-buttress-512811-c9"]), 0)
