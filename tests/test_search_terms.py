@@ -71,6 +71,11 @@ class WeakPerformanceTest(unittest.TestCase):
         for f in flags:
             self.assertNotIn("irrelevant", json.dumps(f))
 
+    def test_spend_threshold_flags_low_click_terms(self):
+        recs = [{"search_term": "b", "campaign_id": "1", "clicks": 3, "cost": Decimal("12"), "conversions": Decimal("0")}]
+        flags = weak_performance(recs, {"min_clicks_for_ratio": 30, "min_spend_zero_conv": 10})
+        self.assertEqual([f["search_term"] for f in flags], ["b"])
+
 
 class CliTest(unittest.TestCase):
     def test_stops_without_negatives(self):

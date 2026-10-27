@@ -4,6 +4,7 @@ here labels a term "irrelevant". Rendering lives in gads.present.search_terms_pa
 from __future__ import annotations
 
 import re
+from decimal import Decimal
 import unicodedata
 from dataclasses import dataclass
 from typing import Literal
