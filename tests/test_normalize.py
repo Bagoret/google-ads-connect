@@ -95,6 +95,27 @@ class FieldMapTest(unittest.TestCase):
 
 
 
+class InspectCliTest(unittest.TestCase):
+    def run_main(self, argv):
+        import contextlib, io
+        from inspect_snapshot import main
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = main(argv)
+        return code, out.getvalue() + err.getvalue()
+
+    def test_help_prints_usage(self):
+        code, text = self.run_main(["--help"])
+        self.assertEqual(code, 0)
+        self.assertIn("Usage", text)
+
+    def test_missing_file_stops_cleanly(self):
+        code, text = self.run_main(["data/raw/does-not-exist.json"])
+        self.assertEqual(code, 2)
+        self.assertIn("STOP:", text)
+        self.assertNotIn("Traceback", text)
+
+
 class InspectTest(unittest.TestCase):
     def test_inspect_reports_shape_grain_and_ranges(self):
         from inspect_snapshot import inspect_snapshot
