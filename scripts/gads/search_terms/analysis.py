@@ -11,6 +11,7 @@ from typing import Literal
 
 from gads.core.thresholds import load_thresholds
 from gads.core.cli import load_json_file
+from gads.core.contracts import QUERY_REQUIRED
 from gads.core.logbook import RunLog, StopAnalysis
 from gads.core.metrics import group_by
 from gads.core.normalize import Snapshot, records_from_snapshot
@@ -101,14 +102,14 @@ def weak_performance(records: list[dict], thresholds: dict) -> list[dict]:
 
 
 def _negatives(args, log: RunLog) -> list[dict]:
-    _, camp = records_from_snapshot(args.negatives, {"campaign_id", "keyword_text", "match_type"}, log, "negative_keywords")
+    _, camp = records_from_snapshot(args.negatives, QUERY_REQUIRED["negative_keywords"], log, "negative_keywords")
     negs = [{**r, "level": "campaign", "scope_campaign_ids": [r["campaign_id"]]} for r in camp]
     if args.shared_negatives:
         if not args.campaign_shared_sets:
             raise StopAnalysis("--shared-negatives needs --campaign-shared-sets to know which campaigns they apply to")
-        _, shared = records_from_snapshot(args.shared_negatives, {"shared_set_id", "keyword_text", "match_type"},
+        _, shared = records_from_snapshot(args.shared_negatives, QUERY_REQUIRED["shared_negative_keywords"],
                                           log, "shared_negative_keywords")
-        _, links = records_from_snapshot(args.campaign_shared_sets, {"campaign_id", "shared_set_id"},
+        _, links = records_from_snapshot(args.campaign_shared_sets, QUERY_REQUIRED["campaign_shared_sets"],
                                          log, "campaign_shared_sets")
         linked: dict[str, list[str]] = {}
         for link in links:
@@ -138,14 +139,14 @@ def analyse(args) -> SearchTermReview:
     if not args.keywords:
         raise StopAnalysis("active keywords are required: pass --keywords (keywords snapshot)")
     log = RunLog()
-    snap, terms = records_from_snapshot(args.search_terms, {"campaign_id", "search_term", "clicks", "cost"},
+    snap, terms = records_from_snapshot(args.search_terms, QUERY_REQUIRED["search_terms"],
                                         log, "search_terms", dated=True)
     grain = ("campaign_id", "ad_group_id", "search_term", "matched_keyword_text", "matched_keyword_match_type")
     check_unique(terms, grain)
     currency = check_single_currency(terms, args.expected_currency)
     caveats = partial_data_caveats(snap.end, account_timezone(terms, args.timezone), args.conversion_lag_days,
                                    parse_now(args.now))
-    _, kw_records = records_from_snapshot(args.keywords, {"campaign_id", "keyword_text", "match_type"}, log, "keywords")
+    _, kw_records = records_from_snapshot(args.keywords, QUERY_REQUIRED["keywords"], log, "keywords")
     keywords = active_keywords(kw_records)
     ad_group_negs = [{**k, "level": "ad_group", "scope_campaign_ids": [k["campaign_id"]]}
                      for k in kw_records if k.get("negative") == "true"]

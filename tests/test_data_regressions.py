@@ -13,7 +13,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from gads.core.logbook import RunLog, StopAnalysis  # noqa: E402
 from gads.core.normalize import apply_field_map, extract_rows, flatten_row, load_field_map, load_snapshot  # noqa: E402
-import snapshot  # noqa: E402
+from gads.connect import mcp_config, snapshot  # noqa: E402
 
 FIX = ROOT / "tests" / "fixtures"
 FAKE = [sys.executable, str(ROOT / "tests" / "fake_mcp_server.py")]
@@ -85,7 +85,7 @@ class CleanStopTest(unittest.TestCase):
             for text in ("{not json", '{"mcpServers": {}}', '{"mcpServers": {"google-ads-mcp": {}}}'):
                 cfg.write_text(text)
                 with self.assertRaises(StopAnalysis, msg=text):
-                    snapshot.load_server_config(cfg)
+                    mcp_config.load_server_config(cfg)
 
     def test_unsupported_gaql_clauses_stop(self):
         for q in ("SELECT campaign.id FROM campaign ORDER BY campaign.id",
