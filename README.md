@@ -18,7 +18,7 @@ and tested on synthetic data. **No ad account is connected yet.**
 | AI analysis + Ask box | `weekly-review` | `scripts/check_insights.py`, `scripts/ask_server.py` | verified AI insights on the dashboard; local Ask box (Claude Opus 5.5 via the official `anthropic` SDK, optional) |
 | Visual dashboard | `weekly-review` | `scripts/dashboard.py` | `outputs/dashboard_*/index.html`: one offline HTML file (KPIs, daily trends, segment mix, issues, campaigns) |
 | Check the OAuth/MCP connection | `onboarding` | `scripts/check_connection.py` | pass/fail checklist (no secrets printed) |
-| One-command Mac setup | `onboarding` | `scripts/setup_mac.sh` (+ `scripts/setup_config.py`) | sign-in, `.mcp.json`, connection check, optional Claude Desktop entry |
+| One-command Mac setup | `onboarding` | `scripts/setup_mac.sh` (+ `scripts/setup_config.py`) | server install (own venv), sign-in, `.mcp.json`, connection check, optional Claude Desktop entry |
 | Track proposed changes | – | `scripts/change_requests.py` | requests with approval history + `outputs/change-requests/status.html` |
 | Fetch data (read-only) | all | `scripts/snapshot.py`, `scripts/inspect_snapshot.py` | `data/raw/*.json` |
 
@@ -75,7 +75,9 @@ that copy. It replaces `context/` and the per-business config with the empty ver
 Never run `--reset` in the copy that holds your own business facts.
 
 ### Running onboarding (on your machine)
-1. Connect the MCP server with OAuth: follow [`docs/mcp-setup.md`](docs/mcp-setup.md) (on a Mac, `bash scripts/setup_mac.sh` does most of it). You configure
+1. Connect the MCP server with OAuth: follow [`docs/mcp-setup.md`](docs/mcp-setup.md) (on a Mac, `bash scripts/setup_mac.sh` does most of it,
+   including installing Google's server in its own environment at `~/.local/share/google-ads-os/mcp-venv`; on macOS 26.0–26.2
+   with Homebrew Python see [Troubleshooting](docs/mcp-setup.md#troubleshooting)). You configure
    credentials locally; never paste them into chat. Check the setup with
    `python3 scripts/check_connection.py --live --customer-id <ID>`.
 2. Open Claude Code in this folder and say **"run onboarding"**. Claude will:

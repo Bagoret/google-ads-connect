@@ -116,6 +116,31 @@ class StaticChecksTest(unittest.TestCase):
         self.ws.write_config(command=["definitely-not-a-real-launcher-synth", "run"])
         self.assertEqual(self.ws.status(run_checks(self.ws.repo), "server launcher"), "fail")
 
+    def server_exe(self, name="google-ads-mcp"):
+        exe = Path(self.ws.tmp.name) / "mcp-venv" / "bin" / name
+        exe.parent.mkdir(parents=True, exist_ok=True)
+        exe.write_text("#!/bin/sh\n")
+        os.chmod(exe, 0o755)
+        return str(exe)
+
+    def test_venv_server_executable_accepted(self):
+        self.ws.write_config(command=[self.server_exe()])
+        checks = run_checks(self.ws.repo)
+        self.assertEqual(self.ws.status(checks, "server launcher"), "ok")
+
+    def test_missing_venv_executable_points_to_setup(self):
+        self.ws.write_config(command=[str(Path(self.ws.tmp.name) / "gone" / "bin" / "google-ads-mcp")])
+        checks = run_checks(self.ws.repo)
+        launcher = next(c for c in checks if c.name == "server launcher")
+        self.assertEqual(launcher.status, "fail")
+        self.assertIn("setup_mac.sh", launcher.fix)
+
+    def test_old_pipx_run_setup_warns(self):
+        self.ws.write_config(command=[self.server_exe("pipx"), "run", "--spec", "google-ads-mcp==0.0.5", "google-ads-mcp"])
+        launcher = next(c for c in run_checks(self.ws.repo) if c.name == "server launcher")
+        self.assertEqual(launcher.status, "warn")
+        self.assertIn("setup_mac.sh", launcher.fix)
+
 
 class LiveChecksTest(unittest.TestCase):
     def setUp(self):

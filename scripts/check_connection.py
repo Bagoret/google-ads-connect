@@ -176,6 +176,18 @@ def _live_checks(cmd: list[str], env: dict, customer_id: str | None, timeout_s: 
     return checks
 
 
+RESETUP = "re-run `bash scripts/setup_mac.sh` (it installs the server in its own folder), or see docs/mcp-setup.md"
+
+
+def _check_launcher(cmd: list[str]) -> Check:
+    if not shutil.which(cmd[0]):
+        return Check("server launcher", "fail", f"`{cmd[0]}` is not installed or not on PATH", RESETUP)
+    if Path(cmd[0]).name == "pipx" and "run" in cmd[1:]:
+        return Check("server launcher", "warn", "older `pipx run` setup: it re-downloads the server and fails on "
+                     "macOS 26.0-26.2 with Homebrew Python (docs/mcp-setup.md › Troubleshooting)", RESETUP)
+    return Check("server launcher", "ok", f"`{cmd[0]}` found")
+
+
 def run_checks(repo: Path, live: bool = False, customer_id: str | None = None, timeout_s: float = 180) -> list[Check]:
     checks = [_check_python()]
     cfg_path = repo / ".mcp.json"
@@ -194,9 +206,7 @@ def run_checks(repo: Path, live: bool = False, customer_id: str | None = None, t
     if cmd is None:
         checks += [Check(n, "skipped", "needs a valid .mcp.json") for n in ("server launcher", "credentials file")]
     else:
-        checks.append(Check("server launcher", "ok", f"`{cmd[0]}` found") if shutil.which(cmd[0]) else
-                      Check("server launcher", "fail", f"`{cmd[0]}` is not installed or not on PATH",
-                            "install pipx: https://pipx.pypa.io/stable/#install-pipx"))
+        checks.append(_check_launcher(cmd))
         checks += _check_credentials(env, repo)
         checks += _check_env_values(env)
     if live:
@@ -234,7 +244,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--live", action="store_true", help="start the MCP server and check its tools")
     ap.add_argument("--customer-id", help="Google Ads account to check access to (with --live)")
-    ap.add_argument("--timeout", type=float, default=180, help="seconds to wait for the server (first pipx run downloads it)")
+    ap.add_argument("--timeout", type=float, default=180, help="seconds to wait for the server to start and answer")
     args = ap.parse_args(argv)
     checks = run_checks(ROOT, live=args.live, customer_id=args.customer_id, timeout_s=args.timeout)
     print(render(checks))

@@ -5,12 +5,14 @@
 #
 # Run it in Terminal from anywhere inside this repo, after Part A (Cloud project, Google Ads API enabled,
 # consent screen, Desktop app OAuth client). It:
-#   1. checks Python 3.10+, pipx and the gcloud CLI, and asks before installing anything with Homebrew;
-#   2. finds your OAuth client JSON and keeps it in ~/.config/google-ads-os/ (private to you);
-#   3. runs the Google sign-in in your browser (Application Default Credentials);
-#   4. writes .mcp.json (gitignored, private) and runs scripts/check_connection.py --live;
-#   5. optionally adds the server to Claude Desktop, backing up its config first.
-# It never prints secrets, never stores them in the repo, and never changes anything in Google Ads.
+#   1. checks Python and the gcloud CLI, and asks before installing anything with Homebrew;
+#   2. installs Google's server (pinned) in its own folder, ~/.local/share/google-ads-os/mcp-venv, after asking;
+#   3. finds your OAuth client JSON and keeps it in ~/.config/google-ads-os/ (private to you);
+#   4. runs the Google sign-in in your browser (Application Default Credentials), unless you already have one;
+#   5. writes .mcp.json (gitignored, private) and runs scripts/check_connection.py --live;
+#   6. optionally adds the server to Claude Desktop, backing up its config first.
+# Safe to re-run: finished steps are kept. It never prints secrets, never stores them in the repo, and never
+# changes anything in Google Ads.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -19,12 +21,14 @@ CLIENT="$CLIENT_DIR/client_secret.json"
 ADC="${CLOUDSDK_CONFIG:-$HOME/.config/gcloud}/application_default_credentials.json"
 SCOPES="https://www.googleapis.com/auth/adwords,https://www.googleapis.com/auth/cloud-platform"
 DESKTOP_DIR="$HOME/Library/Application Support/Claude"
+VENV="${GOOGLE_ADS_OS_VENV:-$HOME/.local/share/google-ads-os/mcp-venv}"
+SERVER="$VENV/bin/google-ads-mcp"
 PROJECT_ID=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --project-id) [ $# -ge 2 ] || { echo "--project-id needs a value" >&2; exit 2; }; PROJECT_ID="$2"; shift 2 ;;
-    -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1 (try --help)" >&2; exit 2 ;;
   esac
 done
@@ -79,12 +83,40 @@ if [ -z "$PY" ]; then
 fi
 ok "$("$PY" --version) at $PY"
 
-step "2/7 pipx (runs Google's MCP server in its own isolated environment)"
-if ! command -v pipx >/dev/null 2>&1; then
-  brew_install "pipx" pipx
+step "2/7 Google's MCP server (its own Python environment, outside the repo)"
+pick_server_python() {  # prints the chosen interpreter; a note goes to stderr if it needs the macOS workaround
+  local c p
+  local cands=()
+  for c in python3.13 python3.12 python3.11 python3.10 python3 \
+           /opt/homebrew/bin/python3.13 /opt/homebrew/bin/python3.12 /opt/homebrew/bin/python3.11 /opt/homebrew/bin/python3.10 \
+           /usr/local/bin/python3.13 /usr/local/bin/python3.12 /usr/local/bin/python3.11 /usr/local/bin/python3.10 \
+           /Library/Frameworks/Python.framework/Versions/3.13/bin/python3.13 \
+           /Library/Frameworks/Python.framework/Versions/3.12/bin/python3.12 \
+           /Library/Frameworks/Python.framework/Versions/3.11/bin/python3.11 \
+           /Library/Frameworks/Python.framework/Versions/3.10/bin/python3.10; do
+    p="$(command -v "$c" 2>/dev/null || true)"
+    [ -n "$p" ] && cands+=("$p")
+  done
+  [ -n "${cands[*]-}" ] || return 1
+  "$PY" "$REPO/scripts/setup_config.py" server-python "${cands[@]}"
+}
+if "$PY" "$REPO/scripts/setup_config.py" server-venv --python "$PY" --venv "$VENV" --status >/dev/null 2>&1; then
+  ok "google-ads-mcp 0.0.5 already installed in $VENV"
+else
+  SERVER_PY="$(pick_server_python)" || SERVER_PY=""
+  if [ -z "$SERVER_PY" ]; then
+    echo "   Google's server needs Python 3.10 to 3.13."
+    brew_install "Python 3.12 (runs Google's server)" python@3.12
+    SERVER_PY="$(pick_server_python)" || stop "Python 3.12 was installed but could not be used; open a new Terminal window and re-run."
+  fi
+  ok "server Python: $("$SERVER_PY" --version 2>&1) at $SERVER_PY"
+  echo "   Google's server (google-ads-mcp 0.0.5 and its libraries, from PyPI) goes in its own folder:"
+  echo "   $VENV"
+  ask_yes "   Download and install it there now?" || stop "Google's server is required. Re-run this script when you are ready."
+  "$PY" "$REPO/scripts/setup_config.py" server-venv --python "$SERVER_PY" --venv "$VENV" || exit 2
 fi
-PIPX="$(command -v pipx)" || stop "pipx not found after install; open a new Terminal window and re-run."
-ok "pipx at $PIPX"
+[ -x "$SERVER" ] || stop "the server was not found at $SERVER."
+ok "server at $SERVER"
 
 step "3/7 gcloud CLI (used once, for the Google sign-in)"
 if ! command -v gcloud >/dev/null 2>&1; then
@@ -142,27 +174,34 @@ MANAGER="$(prompt "   Manager (MCC) account ID, only if you reach this account t
 if [ -n "$MANAGER" ]; then
   LOGIN="$("$PY" "$REPO/scripts/setup_config.py" customer-id "$MANAGER")" || exit 2
 fi
-ARGS=(--pipx "$PIPX" --credentials "$ADC" --project-id "$PROJECT_ID")
+ARGS=(--server "$SERVER" --credentials "$ADC" --project-id "$PROJECT_ID")
 [ -n "$LOGIN" ] && ARGS+=(--login-customer-id "$LOGIN")
 
-REPLACE=()
-if [ -f "$REPO/.mcp.json" ]; then
-  ask_yes "   .mcp.json already exists. Back it up and rewrite it?" || stop "kept your existing .mcp.json."
-  REPLACE=(--replace)
+RC=0
+"$PY" "$REPO/scripts/setup_config.py" mcp-json --repo "$REPO" "${ARGS[@]}" 2>/dev/null || RC=$?
+if [ "$RC" = 3 ]; then
+  echo "   .mcp.json already exists with a different setup (for example the older 'pipx run' one)."
+  ask_yes "   Back it up and rewrite it?" || stop "kept your existing .mcp.json."
+  "$PY" "$REPO/scripts/setup_config.py" mcp-json --repo "$REPO" "${ARGS[@]}" --replace || exit 2
+elif [ "$RC" != 0 ]; then
+  "$PY" "$REPO/scripts/setup_config.py" mcp-json --repo "$REPO" "${ARGS[@]}" || exit 2
 fi
-"$PY" "$REPO/scripts/setup_config.py" mcp-json --repo "$REPO" "${ARGS[@]}" ${REPLACE[@]+"${REPLACE[@]}"} || exit 2
 
-echo "   Checking the connection (the first run downloads Google's server and can take a few minutes)..."
+echo "   Checking the connection..."
 CHECK=0
 "$PY" "$REPO/scripts/check_connection.py" --live --customer-id "$CID" || CHECK=$?
 
 echo
 if ask_yes "Also add Google Ads to the Claude Desktop app (config is backed up first)?"; then
   CONFIG="$DESKTOP_DIR/claude_desktop_config.json"
-  if ! "$PY" "$REPO/scripts/setup_config.py" desktop --config "$CONFIG" "${ARGS[@]}"; then
-    if ask_yes "   Replace the existing google-ads-mcp entry (a backup is kept)?"; then
+  RC=0
+  "$PY" "$REPO/scripts/setup_config.py" desktop --config "$CONFIG" "${ARGS[@]}" || RC=$?
+  if [ "$RC" = 3 ]; then
+    if ask_yes "   Replace the existing google-ads-mcp entry (for example the older 'pipx run' one; a backup is kept)?"; then
       "$PY" "$REPO/scripts/setup_config.py" desktop --config "$CONFIG" "${ARGS[@]}" --replace || exit 2
     fi
+  elif [ "$RC" != 0 ]; then
+    exit 2
   fi
   echo "   Then paste the Project instructions from docs/claude-desktop.md into a Claude Project."
 fi

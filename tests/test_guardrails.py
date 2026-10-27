@@ -67,7 +67,8 @@ class SettingsTest(unittest.TestCase):
     def test_mcp_example_has_placeholders_only(self):
         cfg = json.loads((ROOT / ".mcp.json.example").read_text())
         server = cfg["mcpServers"]["google-ads-mcp"]
-        self.assertEqual(server["command"], "pipx")
+        self.assertEqual(server["command"], "PATH_TO_GOOGLE_ADS_MCP")  # the venv's google-ads-mcp, not `pipx run`
+        self.assertEqual(server["args"], [])
         for value in server.get("env", {}).values():
             self.assertTrue(value.startswith("YOUR_") or value.startswith("PATH_TO_"), value)
 
