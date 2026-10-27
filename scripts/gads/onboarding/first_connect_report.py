@@ -51,12 +51,18 @@ def render_markdown(fc: FirstConnect, generated_at: str) -> str:
         for q in problems:
             L.append(f"- **{q.query}** ({q.status}): {q.detail}")
     L += ["", "## Next steps", ""]
+    quiet = any(q.status == "EMPTY" and q.date_range is None and "--end" in q.detail for q in fc.queries)
     if fc.failed:
         L += ["- Fix the failed queries (a common cause is API access: the Cloud project needs Explorer access or "
               "higher for real accounts), then re-run `python3 scripts/first_connect.py`.",
               "- Share this report (it holds no account data) if you need help with a failure."]
     else:
-        L += ["- In Claude Code, say **\"run onboarding\"**, then **\"weekly review for last week\"**."]
+        period = "a period when the campaigns were running" if quiet else "last week"
+        L += [f"- In Claude Code, say **\"run onboarding\"**, then **\"weekly review for {period}\"**."]
+    if quiet:
+        L.append("- Dated queries returned no rows for this period. If your campaigns are paused, check them on a "
+                 "period when they were running: `python3 scripts/first_connect.py --customer-id "
+                 f"{fc.customer_id} --end YYYY-MM-DD --days 30`.")
     if any(q.unmapped for q in fc.queries):
         L.append("- Unmapped fields are returned by Google but not used yet (not an error); add them to "
                  "`config/field_map.json` only when a feature needs them.")

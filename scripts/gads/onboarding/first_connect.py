@@ -71,6 +71,9 @@ def check_query(name: str, customer_id: str, period: tuple[date, date], server_c
     if info["rows"] == 0:
         result.status = "EMPTY"
         result.detail = "no rows returned: the response shape is valid but the required fields could not be checked"
+        if start:
+            result.detail += (f" (no activity {start} to {end}; if the campaigns are paused, re-run with --end set to "
+                              "a day when they were running, e.g. --end 2026-06-30 --days 30)")
         return result
     result.missing = sorted(QUERY_REQUIRED.get(name, frozenset()) - set(info["canonical_fields"]))
     if result.missing:

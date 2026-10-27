@@ -132,6 +132,21 @@ class FirstConnectTest(unittest.TestCase):
         self.assertEqual(q["status"], "EMPTY")
         self.assertEqual({f["feature"]: f["status"] for f in s["features"]}["Product review"], "NO DATA")
 
+    def test_empty_dated_query_suggests_an_active_period(self):
+        _, _, folders = self.run_cli(write_fixtures(self.base / "fx", empty={"campaign_daily"}))
+        q = next(q for q in self.summary(folders)["queries"] if q["query"] == "campaign_daily")
+        self.assertIn("--end", q["detail"])
+        report = (folders[0] / "report.md").read_text()
+        self.assertIn("paused", report)
+        self.assertIn("--end", report.split("## Next steps")[1])
+        self.assertIn("a period when the campaigns were running", report)
+
+    def test_empty_undated_query_gets_no_period_hint(self):
+        _, _, folders = self.run_cli(write_fixtures(self.base / "fx", empty={"keywords"}))
+        q = next(q for q in self.summary(folders)["queries"] if q["query"] == "keywords")
+        self.assertNotIn("--end", q["detail"])
+        self.assertNotIn("--end", (folders[0] / "report.md").read_text().split("## Next steps")[1])
+
     def test_dates_outside_the_requested_period_fail(self):
         code, _, folders = self.run_cli(write_fixtures(self.base / "fx"), "--end", "2026-10-26")  # fixtures hold 10-01
         self.assertEqual(code, 1)
