@@ -1,8 +1,12 @@
-"""Component boundaries and fault isolation.
+"""Component boundaries and fault isolation (see docs/architecture.md).
 
-Components live in scripts/gads/<component>/ and may only import the components listed in ALLOWED. A mistake in
-one component therefore cannot break components that do not depend on it; these tests prove it by blocking a
-component and running the others.
+The engine is organised features-first: shared foundations (core, ui, connect) and one package per feature
+(weekly, search_terms, products, changes, onboarding, ai). Three rules, checked statically and by importing each
+component with everything it does not depend on blocked:
+  1. a component imports only the components listed for it in ALLOWED (shared layers never import features);
+  2. features are independent of each other (the only exception: ai extends the weekly review);
+  3. inside a feature, the computation modules (COMPUTE) never import pages, reports or the ui kit.
+A mistake in one feature therefore cannot break another feature.
 """
 import ast
 import contextlib
@@ -20,16 +24,23 @@ SCRIPTS = ROOT / "scripts"
 GADS = SCRIPTS / "gads"
 sys.path.insert(0, str(SCRIPTS))
 
-# component -> components it may import (besides itself). Lower layers never import higher ones.
+SHARED = {"core", "ui", "connect"}
+FEATURES = {"weekly", "search_terms", "products", "changes", "onboarding", "ai"}
+# component -> components it may import (besides itself).
 ALLOWED = {
     "core": set(),
+    "ui": {"core"},
     "connect": {"core"},
-    "setup": {"core"},
-    "changes": {"core"},
-    "analysis": {"core"},
-    "present": {"core", "analysis", "changes"},
-    "ai": {"core", "analysis", "present"},
+    "onboarding": {"core"},
+    "changes": {"core", "ui"},
+    "weekly": {"core", "ui"},
+    "search_terms": {"core", "ui"},
+    "products": {"core", "ui"},
+    "ai": {"core", "ui", "weekly"},
 }
+# feature -> its computation modules (no pages/reports/ui inside these)
+COMPUTE = {"weekly": {"analysis", "findings"}, "search_terms": {"analysis"}, "products": {"analysis"},
+           "changes": {"pipeline", "store"}, "onboarding": {"context"}, "ai": {"insights"}}
 
 
 def gads_imports(path: Path) -> list[tuple[str, int]]:
@@ -48,6 +59,17 @@ def gads_imports(path: Path) -> list[tuple[str, int]]:
     return found
 
 
+def gads_module_imports(path: Path) -> set[str]:
+    """Every gads.<component>.<module> the file imports."""
+    out = set()
+    for node in ast.walk(ast.parse(path.read_text())):
+        if isinstance(node, ast.ImportFrom) and node.module and node.module.startswith("gads."):
+            out.add(node.module)
+        elif isinstance(node, ast.Import):
+            out.update(a.name for a in node.names if a.name.startswith("gads."))
+    return out
+
+
 class BoundaryTest(unittest.TestCase):
     def test_every_module_belongs_to_a_component(self):
         loose = [p.name for p in GADS.glob("*.py") if p.name != "__init__.py"]
@@ -63,6 +85,25 @@ class BoundaryTest(unittest.TestCase):
                     if target != component and target not in allowed:
                         violations.append(f"{path.relative_to(ROOT)}:{line} imports gads.{target}")
         self.assertEqual(violations, [])
+
+    def test_features_are_independent_and_shared_layers_never_import_features(self):
+        self.assertEqual(SHARED | FEATURES, set(ALLOWED))
+        for component in SHARED:
+            self.assertFalse(ALLOWED[component] & FEATURES, component)
+        for feature in FEATURES - {"ai"}:
+            self.assertFalse(ALLOWED[feature] & FEATURES, feature)
+
+    def test_computation_never_imports_pages_reports_or_ui(self):
+        bad = []
+        for feature, compute in COMPUTE.items():
+            for name in compute:
+                path = GADS / feature / f"{name}.py"
+                self.assertTrue(path.exists(), path)
+                for mod in gads_module_imports(path):
+                    parts = mod.split(".")
+                    if parts[1] == "ui" or (parts[1] == feature and len(parts) > 2 and parts[2] not in compute):
+                        bad.append(f"{path.relative_to(ROOT)} imports {mod}")
+        self.assertEqual(bad, [])
 
     def test_no_relative_imports(self):
         # relative imports ("from ..present import x") would slip past the component check; use gads.<component>
@@ -120,13 +161,15 @@ class IndependenceTest(unittest.TestCase):
             r = import_with_blocked(blocked, modules_of(component))
             self.assertEqual(r.returncode, 0, f"{component} needs a component it should not:\n{r.stderr[-800:]}")
 
-    def test_weekly_analysis_runs_without_presentation_or_ai(self):
+    def test_weekly_analysis_runs_without_pages_ui_ai_or_other_features(self):
         args = ["--snapshot", str(ROOT / "tests" / "fixtures" / "synthetic_weekly_two_weeks.json"),
                 "--current", "2026-10-13:2026-10-19", "--previous", "2026-10-06:2026-10-12",
                 "--now", "2026-10-25T09:00:00+00:00"]
-        code = BLOCKER.format(blocked=["gads.present", "gads.ai"], scripts=str(SCRIPTS)) + f"""
+        blocked = ["gads.ui", "gads.ai", "gads.weekly.report", "gads.weekly.dashboard", "gads.search_terms",
+                   "gads.products", "gads.changes", "gads.onboarding", "gads.connect"]
+        code = BLOCKER.format(blocked=blocked, scripts=str(SCRIPTS)) + f"""
 import argparse
-from gads.analysis.weekly import build_review
+from gads.weekly.analysis import build_review
 ap = argparse.ArgumentParser()
 for flag in ("--snapshot", "--current", "--previous", "--now", "--expected-currency", "--timezone",
              "--conversion-lag-days", "--target-roas", "--target-cpa"):
@@ -140,9 +183,10 @@ print(review.ctx.account["current"].cost == __import__("decimal").Decimal("273")
 
 
 class ChangeRequestIsolationTest(unittest.TestCase):
-    def test_propose_and_list_work_without_the_presentation_component(self):
+    def test_propose_and_list_work_without_the_status_page_or_other_features(self):
         with tempfile.TemporaryDirectory() as tmp:
-            code = BLOCKER.format(blocked=["gads.present", "gads.ai", "gads.analysis"], scripts=str(SCRIPTS)) + f"""
+            blocked = ["gads.changes.page", "gads.ui", "gads.ai", "gads.weekly", "gads.search_terms", "gads.products"]
+            code = BLOCKER.format(blocked=blocked, scripts=str(SCRIPTS)) + f"""
 import change_requests
 common = ["--requests-dir", {tmp!r} + "/req", "--change-log", {tmp!r} + "/log.md", "--config", {tmp!r} + "/x.json"]
 assert change_requests.main(["propose", "--operation", "pause_campaign", "--customer-id", "900-000-0000",

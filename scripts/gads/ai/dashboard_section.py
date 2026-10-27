@@ -9,8 +9,8 @@ from html import escape
 from pathlib import Path
 
 from gads.ai.insights import build_facts, validate_insights
-from gads.analysis.weekly import Review
-from gads.present.viz import badge
+from gads.weekly.analysis import Review
+from gads.ui.viz import badge
 
 ASK_JS = """
 (function(){

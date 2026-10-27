@@ -16,12 +16,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gads.analysis.search_terms import COVERAGE_NOTE, analyse  # noqa: E402
+from gads.search_terms.analysis import COVERAGE_NOTE, analyse  # noqa: E402
 from gads.core.cli import add_common_args, run_cli, write_optional  # noqa: E402
-from gads.core.files import unique_dir  # noqa: E402
-from gads.present.search_terms_page import render_search_dashboard, render_search_markdown  # noqa: E402
+from gads.core.files import ROOT, unique_dir  # noqa: E402
+from gads.search_terms.page import render_search_dashboard, render_search_markdown  # noqa: E402
 
-from gads.core.paths import ROOT  # noqa: E402
 
 
 def run(args) -> Path:

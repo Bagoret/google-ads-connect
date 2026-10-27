@@ -6,6 +6,8 @@ import os
 import tempfile
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[3]  # scripts/gads/core/files.py -> repository root
+
 
 def write_private_json(path: Path, data) -> None:
     """Replace path with data as JSON, mode 600, via a temp file so a crash never leaves it half-written."""

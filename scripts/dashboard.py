@@ -21,10 +21,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gads.analysis.weekly import add_weekly_args, build_review  # noqa: E402
+from gads.weekly.analysis import add_weekly_args, build_review  # noqa: E402
 from gads.core.logbook import StopAnalysis  # noqa: E402
 from gads.core.files import unique_dir  # noqa: E402
-from gads.present.weekly_dashboard import render_dashboard  # noqa: E402
+from gads.weekly.dashboard import render_dashboard  # noqa: E402
 
 AI_UNAVAILABLE = ('<section class="card"><h2>AI analysis</h2><p class="muted">AI analysis is unavailable for this page '
                   '({}). The rest of the dashboard is unaffected.</p></section>')

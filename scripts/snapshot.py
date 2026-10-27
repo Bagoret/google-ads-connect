@@ -25,7 +25,7 @@ from gads.core.ids import parse_customer_id  # noqa: E402
 from gads.connect.mcp_client import McpError, McpStdioClient, extract_payload  # noqa: E402
 from gads.connect.mcp_config import STRUCTURED_PARAMS, find_search_tool, load_server_config  # noqa: E402
 
-from gads.core.paths import ROOT  # noqa: E402
+from gads.core.files import ROOT  # noqa: E402
 
 
 def parse_gaql(gaql: str) -> dict:

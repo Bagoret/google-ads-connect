@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from gads.analysis.search_terms import classify_brand, find_conflicts, negative_blocks, normalize_term, weak_performance  # noqa: E402
+from gads.search_terms.analysis import classify_brand, find_conflicts, negative_blocks, normalize_term, weak_performance  # noqa: E402
 from search_terms import main  # noqa: E402
 
 FIX = ROOT / "tests" / "fixtures"

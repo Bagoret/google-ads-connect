@@ -1,15 +1,15 @@
 """Weekly dashboard page: KPI tiles, daily charts, segment mix, issues, campaigns. Pure rendering of a weekly
-Review (gads.analysis.weekly); it never imports the AI component."""
+Review (gads.weekly.analysis); it never imports the AI component."""
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from html import escape
 
-from gads.analysis.weekly import Review
+from gads.weekly.analysis import Review
 from gads.core.compare import pct_change
 from gads.core.metrics import Totals, derive, fmt
-from gads.present.viz import bar_chart, caveats_card, page, source_note
+from gads.ui.viz import bar_chart, caveats_card, page, source_note
 
 ZERO = Decimal(0)
 

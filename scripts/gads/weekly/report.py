@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 
 from gads.core.compare import pct_change
-from gads.analysis.weekly import ReportData
-from gads.analysis.findings import ACTION_COLUMNS, Action, ReviewContext
+from gads.weekly.analysis import ReportData
+from gads.weekly.findings import ACTION_COLUMNS, Action, ReviewContext
 from gads.core.logbook import RunLog
 from gads.core.metrics import Totals, derive, fmt
 from gads.core.files import unique_dir

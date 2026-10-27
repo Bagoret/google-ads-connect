@@ -17,10 +17,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gads.analysis.products import analyse  # noqa: E402
+from gads.products.analysis import analyse  # noqa: E402
 from gads.core.cli import add_common_args, run_cli, write_optional  # noqa: E402
 from gads.core.files import unique_dir  # noqa: E402
-from gads.present.products_page import render_product_dashboard, render_product_markdown  # noqa: E402
+from gads.products.page import render_product_dashboard, render_product_markdown  # noqa: E402
 
 
 def run(args) -> Path:

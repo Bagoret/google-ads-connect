@@ -17,9 +17,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gads.analysis.weekly import add_weekly_args, build_review  # noqa: E402
+from gads.weekly.analysis import add_weekly_args, build_review  # noqa: E402
 from gads.core.cli import run_cli  # noqa: E402
-from gads.present.report import render_report, write_outputs  # noqa: E402
+from gads.weekly.report import render_report, write_outputs  # noqa: E402
 
 
 def run_review(args: argparse.Namespace) -> Path:

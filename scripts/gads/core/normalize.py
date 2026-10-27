@@ -9,7 +9,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from gads.core.logbook import RunLog, StopAnalysis
-from gads.core.paths import ROOT
+from gads.core.files import ROOT
 
 MICROS = Decimal(1_000_000)
 

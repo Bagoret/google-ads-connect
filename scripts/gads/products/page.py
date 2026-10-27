@@ -4,10 +4,10 @@ from __future__ import annotations
 from decimal import Decimal
 from html import escape
 
-from gads.analysis.products import SOURCE_GRAIN, ProductReview
+from gads.products.analysis import SOURCE_GRAIN, ProductReview
 from gads.core.logbook import RunLog
 from gads.core.metrics import aggregate, derive, fmt
-from gads.present.viz import badge, bar_chart, caveats_card, fold_top, page, source_note, tile
+from gads.ui.viz import badge, bar_chart, caveats_card, fold_top, page, source_note, tile
 
 
 def render_product_markdown(r: ProductReview) -> str:

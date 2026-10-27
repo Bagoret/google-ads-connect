@@ -1,6 +1,6 @@
 """Search-term review computation: brand classification, weak-performance flags, and conflicts between negative
 keywords and active keywords. Intent judgement is left to the search-term-review skill (Claude + human); nothing
-here labels a term "irrelevant". Rendering lives in gads.present.search_terms_page."""
+here labels a term "irrelevant". Rendering lives in gads.search_terms.page."""
 from __future__ import annotations
 
 import re
@@ -9,7 +9,7 @@ import unicodedata
 from dataclasses import dataclass
 from typing import Literal
 
-from gads.analysis.config import load_thresholds
+from gads.core.thresholds import load_thresholds
 from gads.core.cli import load_json_file
 from gads.core.logbook import RunLog, StopAnalysis
 from gads.core.metrics import group_by

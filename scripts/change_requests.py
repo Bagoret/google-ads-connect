@@ -28,10 +28,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gads.core.ids import parse_customer_id  # noqa: E402
 from gads.changes.pipeline import (ChangeRequest, IllegalTransition, approve, record_approved,  # noqa: E402
                           save_request, transition, validate_change)
-from gads.changes.store import approval_valid, load_requests  # noqa: E402
-from gads.changes.describe import entity  # noqa: E402
+from gads.changes.store import approval_valid, entity, load_requests  # noqa: E402
 
-from gads.core.paths import ROOT  # noqa: E402
+from gads.core.files import ROOT  # noqa: E402
 
 
 class CliError(Exception):
@@ -110,7 +109,7 @@ def cmd_list(args) -> str:
 
 def cmd_view(args) -> str:
     config = json.loads(Path(args.config).read_text(encoding="utf-8")) if Path(args.config).exists() else {}
-    from gads.present.change_requests_page import render_status  # only `view` needs the page code
+    from gads.changes.page import render_status  # only `view` needs the page code
     html = render_status(load_requests(args.requests_dir), config, datetime.now(timezone.utc))
     Path(args.requests_dir).mkdir(parents=True, exist_ok=True)
     out = Path(args.requests_dir) / "status.html"

@@ -4,10 +4,9 @@ from __future__ import annotations
 from datetime import datetime
 from html import escape
 
-from gads.changes.describe import entity, summary
+from gads.changes.store import approval_valid, entity, summary
 from gads.changes.pipeline import ChangeRequest, validate_change
-from gads.changes.store import approval_valid
-from gads.present.viz import badge, page, tile
+from gads.ui.viz import badge, page, tile
 
 STATUS_ORDER = ["proposed", "approved", "rejected", "executed", "verified", "rolled_back"]
 STATUS_BADGES = {

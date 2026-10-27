@@ -1,5 +1,5 @@
 """Weekly review computation: load a campaign_daily snapshot, validate it, aggregate by period, campaign and
-segment, and generate rule-based findings. No rendering here; see gads.present.report and dashboard pages."""
+segment, and generate rule-based findings. No rendering here; see gads.weekly.report and dashboard pages."""
 from __future__ import annotations
 
 import argparse
@@ -7,14 +7,14 @@ from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
-from gads.analysis.config import load_thresholds
-from gads.analysis.findings import ReviewContext, generate_actions
+from gads.core.thresholds import load_thresholds
+from gads.weekly.findings import ReviewContext, generate_actions
 from gads.core.cli import add_common_args, load_json_file
 from gads.core.compare import Period, equivalence
 from gads.core.logbook import RunLog, StopAnalysis
 from gads.core.metrics import Totals, aggregate, group_by
 from gads.core.normalize import Snapshot, detect_grain, records_from_snapshot
-from gads.core.paths import ROOT
+from gads.core.files import ROOT
 from gads.core.validate import (account_timezone, check_date_coverage, check_single_currency, check_unique,
                                 parse_now, partial_data_caveats)
 

@@ -12,9 +12,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gads.setup.context import readiness_markdown, scan_context  # noqa: E402
+from gads.onboarding.context import readiness_markdown, scan_context  # noqa: E402
 
-from gads.core.paths import ROOT  # noqa: E402
+from gads.core.files import ROOT  # noqa: E402
 
 
 def main(argv: list[str] | None = None) -> int:

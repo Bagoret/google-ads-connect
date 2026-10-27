@@ -10,9 +10,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from gads.analysis.findings import check_thresholds, generate_actions  # noqa: E402
+from gads.core.thresholds import check_thresholds
+from gads.weekly.findings import generate_actions  # noqa: E402
 from gads.core.logbook import StopAnalysis  # noqa: E402
-from gads.analysis.weekly import build_review  # noqa: E402
+from gads.weekly.analysis import build_review  # noqa: E402
 from weekly_review import build_parser, main as weekly_main  # noqa: E402
 
 FIX = ROOT / "tests" / "fixtures"
@@ -151,7 +152,7 @@ class ChangeRequestParsingTest(unittest.TestCase):
 
 class ActiveKeywordsTest(unittest.TestCase):
     def test_paused_and_negative_keywords_excluded_from_conflict_check(self):
-        from gads.analysis.search_terms import active_keywords
+        from gads.search_terms.analysis import active_keywords
         rows = [{"keyword_text": "a", "negative": "false", "criterion_status": "ENABLED"},
                 {"keyword_text": "b", "negative": "false", "criterion_status": "PAUSED"},
                 {"keyword_text": "c", "negative": "true", "criterion_status": "ENABLED"},

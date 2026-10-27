@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 from gads.core.logbook import StopAnalysis
-from gads.core.paths import ROOT
+from gads.core.files import ROOT
 
 
 def add_common_args(ap: argparse.ArgumentParser) -> argparse.ArgumentParser:

@@ -4,10 +4,10 @@ from __future__ import annotations
 from decimal import Decimal
 from html import escape
 
-from gads.analysis.search_terms import COVERAGE_NOTE, SearchTermReview
+from gads.search_terms.analysis import COVERAGE_NOTE, SearchTermReview
 from gads.core.logbook import RunLog
 from gads.core.metrics import fmt
-from gads.present.viz import badge, bar_chart, caveats_card, page, source_note, tile
+from gads.ui.viz import badge, bar_chart, caveats_card, page, source_note, tile
 
 
 def render_search_markdown(r: SearchTermReview) -> str:

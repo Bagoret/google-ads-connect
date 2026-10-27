@@ -1,5 +1,5 @@
 """Product (item) review computation from a product_daily snapshot, optionally joined to a business-supplied
-margin/stock file. Revenue ROAS is never treated as profit. Rendering lives in gads.present.products_page."""
+margin/stock file. Revenue ROAS is never treated as profit. Rendering lives in gads.products.page."""
 from __future__ import annotations
 
 from dataclasses import dataclass

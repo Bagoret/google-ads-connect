@@ -1,10 +1,11 @@
-"""Reading saved change requests (outputs/change-requests/<id>_<NN>_<status>.json)."""
+"""Saved change requests (outputs/change-requests/<id>_<NN>_<status>.json): loading, approval check, and short
+text descriptions shared by the CLI's list command and the status page."""
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-from gads.changes.pipeline import ChangeRequest
+from gads.changes.pipeline import BEFORE_AFTER, ChangeRequest
 
 
 def load_requests(requests_dir: Path) -> dict[str, ChangeRequest]:
@@ -23,3 +24,24 @@ def load_requests(requests_dir: Path) -> dict[str, ChangeRequest]:
 
 def approval_valid(cr: ChangeRequest) -> bool:
     return bool(cr.approval) and cr.approval.get("fingerprint") == cr.fingerprint()
+
+
+def before_after(cr: ChangeRequest) -> str:
+    for b, a in BEFORE_AFTER:
+        if b in cr.params and a in cr.params:
+            unit = " micros" if "micros" in b else ""
+            return f"{cr.params[b]} → {cr.params[a]}{unit}"
+    return "–"
+
+
+def summary(cr: ChangeRequest) -> str:
+    """What the change does, in words."""
+    if "text" in cr.params and "match_type" in cr.params:
+        return f'add negative "{cr.params["text"]}" ({cr.params["match_type"]})'
+    if cr.operation.startswith(("pause_", "enable_")):
+        return cr.operation.split("_", 1)[0]
+    return before_after(cr)
+
+
+def entity(cr: ChangeRequest) -> str:
+    return ", ".join(f"{k}={v}" for k, v in cr.params.items() if k.endswith("_id")) or "–"
