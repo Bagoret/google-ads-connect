@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "tests"))
 
 import fake_wheel  # noqa: E402
-from gads import macver_shim  # noqa: E402
+from gads.connect import macver_shim  # noqa: E402
 from setup_config import (NeedsReplace, SetupError, build_server_venv, check_client_file, find_pip_wheel,  # noqa: E402
                           main, normalise_customer_id, pick_server_python, probe_python, server_entry, venv_status,
                           write_desktop, write_mcp_json)

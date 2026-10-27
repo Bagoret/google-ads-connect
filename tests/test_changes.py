@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from gads.changes import (OPERATIONS, ChangeRequest, DisabledExecutor, IllegalTransition, WritesDisabled,  # noqa: E402
+from gads.changes.pipeline import (OPERATIONS, ChangeRequest, DisabledExecutor, IllegalTransition, WritesDisabled,  # noqa: E402
                           approve, execute_change, record_approved, save_request, transition, validate_change)
 
 NOW = datetime(2026, 10, 25, 9, 0, tzinfo=timezone.utc)

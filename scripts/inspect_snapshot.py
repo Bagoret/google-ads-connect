@@ -13,8 +13,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gads.logbook import RunLog, StopAnalysis  # noqa: E402
-from gads.normalize import apply_field_map, detect_grain, extract_rows, flatten_row, load_field_map, load_snapshot  # noqa: E402
+from gads.core.logbook import RunLog, StopAnalysis  # noqa: E402
+from gads.core.normalize import apply_field_map, detect_grain, extract_rows, flatten_row, load_field_map, load_snapshot  # noqa: E402
 
 
 def inspect_snapshot(path: Path) -> dict:

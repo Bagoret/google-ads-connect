@@ -8,8 +8,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from gads.logbook import RunLog, StopAnalysis  # noqa: E402
-from gads.metrics import Totals  # noqa: E402
+from gads.core.logbook import RunLog, StopAnalysis  # noqa: E402
+from gads.core.metrics import Totals  # noqa: E402
 from product_review import join_supplement, main, normalize_item_id  # noqa: E402
 
 FIX = ROOT / "tests" / "fixtures"

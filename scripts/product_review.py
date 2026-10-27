@@ -19,12 +19,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gads.cli import add_common_args, load_json_file, run_cli  # noqa: E402
-from gads.logbook import RunLog, StopAnalysis  # noqa: E402
-from gads.metrics import Totals, aggregate, derive, fmt, group_by  # noqa: E402
-from gads.normalize import records_from_snapshot, unique_dir  # noqa: E402
-from gads.viz import badge, bar_chart, caveats_card, fold_top, page, source_note, tile  # noqa: E402
-from gads.validate import (account_timezone, check_date_coverage, check_single_currency, check_unique,  # noqa: E402
+from gads.core.cli import add_common_args, load_json_file, run_cli  # noqa: E402
+from gads.core.logbook import RunLog, StopAnalysis  # noqa: E402
+from gads.core.metrics import Totals, aggregate, derive, fmt, group_by  # noqa: E402
+from gads.core.normalize import records_from_snapshot, unique_dir  # noqa: E402
+from gads.present.viz import badge, bar_chart, caveats_card, fold_top, page, source_note, tile  # noqa: E402
+from gads.core.validate import (account_timezone, check_date_coverage, check_single_currency, check_unique,  # noqa: E402
                            parse_now, partial_data_caveats)
 
 ROOT = Path(__file__).resolve().parent.parent

@@ -11,8 +11,8 @@ from __future__ import annotations
 import re
 import unicodedata
 
-from .compare import pct_change
-from .metrics import Totals, derive, fmt
+from gads.core.compare import pct_change
+from gads.core.metrics import Totals, derive, fmt
 
 METRICS = [("cost", "ratio"), ("impressions", "count"), ("clicks", "count"), ("conversions", "conv"),
            ("conversion_value", "ratio"), ("cpc", "ratio"), ("ctr", "pct"), ("cvr", "pct"), ("cpa", "ratio"),

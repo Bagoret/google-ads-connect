@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from gads.insights import build_facts, render_text, validate_insights  # noqa: E402
+from gads.ai.insights import build_facts, render_text, validate_insights  # noqa: E402
 from weekly_review import build_parser, build_review  # noqa: E402
 import dashboard  # noqa: E402
 

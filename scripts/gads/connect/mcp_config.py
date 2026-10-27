@@ -6,7 +6,7 @@ import os
 import re
 from pathlib import Path
 
-from .logbook import StopAnalysis
+from gads.core.logbook import StopAnalysis
 
 SEARCH_TOOL_NAMES = ("search_search", "search")
 # Upstream googleads/google-ads-mcp `search` builds the GAQL itself from these parts.

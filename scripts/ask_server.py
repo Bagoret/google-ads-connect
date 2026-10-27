@@ -23,7 +23,7 @@ from urllib.parse import parse_qs, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gads.insights import render_text  # noqa: E402
+from gads.ai.insights import render_text  # noqa: E402
 
 MODEL = "claude-opus-5-5"
 MAX_QUESTION = 2000

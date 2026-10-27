@@ -8,8 +8,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from gads.logbook import RunLog, StopAnalysis  # noqa: E402
-from gads.normalize import apply_field_map, extract_rows, flatten_row, load_field_map, load_snapshot  # noqa: E402
+from gads.core.logbook import RunLog, StopAnalysis  # noqa: E402
+from gads.core.normalize import apply_field_map, extract_rows, flatten_row, load_field_map, load_snapshot  # noqa: E402
 
 FIX = ROOT / "tests" / "fixtures"
 FMAP = load_field_map()

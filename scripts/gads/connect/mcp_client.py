@@ -14,7 +14,7 @@ import threading
 import time
 from decimal import Decimal
 
-from .logbook import StopAnalysis
+from gads.core.logbook import StopAnalysis
 
 PROTOCOL_VERSION = "2025-06-18"
 

@@ -1,4 +1,4 @@
-"""Command-line plumbing shared by the review scripts: common flags, config loading, exit codes."""
+"""Command-line plumbing shared by the scripts: common flags, JSON config loading, exit codes."""
 from __future__ import annotations
 
 import argparse
@@ -6,10 +6,8 @@ import json
 import sys
 from pathlib import Path
 
-from .findings import check_thresholds
-from .logbook import StopAnalysis
-
-ROOT = Path(__file__).resolve().parent.parent.parent
+from gads.core.logbook import StopAnalysis
+from gads.core.paths import ROOT
 
 
 def add_common_args(ap: argparse.ArgumentParser) -> argparse.ArgumentParser:
@@ -28,10 +26,6 @@ def load_json_file(path: Path, what: str):
         raise StopAnalysis(f"cannot read {what} {path}: {exc.strerror or exc}")
     except ValueError:
         raise StopAnalysis(f"{what} {path} is not valid JSON")
-
-
-def load_thresholds(path: Path = ROOT / "config" / "review_thresholds.json") -> dict:
-    return check_thresholds(load_json_file(path, "thresholds file"))
 
 
 def run_cli(fn, args) -> int:

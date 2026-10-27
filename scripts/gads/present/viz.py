@@ -6,7 +6,7 @@ import json
 from decimal import Decimal
 from html import escape
 
-from .metrics import fmt
+from gads.core.metrics import fmt
 
 
 def safe_json(obj) -> str:

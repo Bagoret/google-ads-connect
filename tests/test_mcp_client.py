@@ -5,8 +5,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from gads.logbook import RunLog, StopAnalysis  # noqa: E402
-from gads.mcp_client import ALLOWED_TOOLS, McpStdioClient, ToolNotAllowed, extract_payload  # noqa: E402
+from gads.core.logbook import RunLog, StopAnalysis  # noqa: E402
+from gads.connect.mcp_client import ALLOWED_TOOLS, McpStdioClient, ToolNotAllowed, extract_payload  # noqa: E402
 
 FIX = ROOT / "tests" / "fixtures"
 FAKE = [sys.executable, str(ROOT / "tests" / "fake_mcp_server.py")]

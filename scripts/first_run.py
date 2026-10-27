@@ -20,7 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from context_status import scan_context  # noqa: E402
-from gads.files import write_private_json  # noqa: E402
+from gads.core.files import write_private_json  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 RELATIONSHIPS = {"owner", "employee", "agency", "freelancer", "consultant", "client", "other"}

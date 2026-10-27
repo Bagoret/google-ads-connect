@@ -23,10 +23,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gads.logbook import StopAnalysis  # noqa: E402
-from gads.mcp_client import McpError, McpStdioClient, extract_payload  # noqa: E402
-from gads.ids import parse_customer_id  # noqa: E402
-from gads.mcp_config import STRUCTURED_PARAMS, find_search_tool, load_server_config  # noqa: E402
+from gads.core.logbook import StopAnalysis  # noqa: E402
+from gads.connect.mcp_client import McpError, McpStdioClient, extract_payload  # noqa: E402
+from gads.core.ids import parse_customer_id  # noqa: E402
+from gads.connect.mcp_config import STRUCTURED_PARAMS, find_search_tool, load_server_config  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SETUP = "see docs/mcp-setup.md"

@@ -6,9 +6,9 @@ from dataclasses import asdict, dataclass
 import math
 from decimal import Decimal
 
-from .compare import Period, pct_change
-from .logbook import StopAnalysis
-from .metrics import Totals, derive, fmt
+from gads.core.compare import Period, pct_change
+from gads.core.logbook import StopAnalysis
+from gads.core.metrics import Totals, derive, fmt
 
 ACTION_COLUMNS = ("priority", "entity_type", "entity_id", "finding", "supporting_metrics", "proposed_action",
                   "rationale", "confidence", "risk", "approval_required", "validation_plan")

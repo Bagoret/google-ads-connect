@@ -26,10 +26,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gads.ids import parse_customer_id  # noqa: E402
-from gads.changes import (BEFORE_AFTER, ChangeRequest, IllegalTransition, approve, record_approved,  # noqa: E402
+from gads.core.ids import parse_customer_id  # noqa: E402
+from gads.changes.pipeline import (BEFORE_AFTER, ChangeRequest, IllegalTransition, approve, record_approved,  # noqa: E402
                           save_request, transition, validate_change)
-from gads.viz import badge, page, tile  # noqa: E402
+from gads.present.viz import badge, page, tile  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 STATUS_ORDER = ["proposed", "approved", "rejected", "executed", "verified", "rolled_back"]

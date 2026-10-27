@@ -8,9 +8,9 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
-from .logbook import RunLog, StopAnalysis
+from gads.core.logbook import RunLog, StopAnalysis
 
-ROOT = Path(__file__).resolve().parents[2]
+from gads.core.paths import ROOT  # noqa: E402
 MICROS = Decimal(1_000_000)
 
 

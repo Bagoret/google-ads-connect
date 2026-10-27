@@ -2,14 +2,14 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
 from pathlib import Path
 
-from .compare import pct_change
-from .findings import ACTION_COLUMNS, Action, ReviewContext
-from .logbook import RunLog
-from .metrics import Totals, derive, fmt
-from .normalize import Snapshot, unique_dir
+from gads.core.compare import pct_change
+from gads.analysis.weekly import ReportData
+from gads.analysis.findings import ACTION_COLUMNS, Action, ReviewContext
+from gads.core.logbook import RunLog
+from gads.core.metrics import Totals, derive, fmt
+from gads.core.normalize import unique_dir
 
 CANNOT_TELL = [
     "Why a metric changed. Changes are observed; causes need change history, auction data, site and stock checks.",
@@ -18,18 +18,6 @@ CANNOT_TELL = [
     "Every search query, or Performance Max channel/asset splits — those need separate queries.",
     "Anything that happened after the snapshot was fetched.",
 ]
-
-
-@dataclass
-class ReportData:
-    """Everything the renderer needs beyond the findings context."""
-    snapshot: Snapshot
-    grain: list[str]
-    rows: int
-    by_type: dict[str, dict[str, Totals]]
-    by_brand: dict[str, dict[str, Totals]]
-    equivalence_reasons: list[str] = field(default_factory=list)
-    parameters: dict = field(default_factory=dict)
 
 
 def _delta(cur, prev) -> str:

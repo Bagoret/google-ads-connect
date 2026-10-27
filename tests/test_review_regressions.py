@@ -10,8 +10,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from gads.findings import check_thresholds, generate_actions  # noqa: E402
-from gads.logbook import StopAnalysis  # noqa: E402
+from gads.analysis.findings import check_thresholds, generate_actions  # noqa: E402
+from gads.core.logbook import StopAnalysis  # noqa: E402
 from weekly_review import build_parser, build_review, main as weekly_main  # noqa: E402
 
 FIX = ROOT / "tests" / "fixtures"
@@ -78,8 +78,8 @@ class BadInputStopsCleanlyTest(unittest.TestCase):
 
 class DatedSnapshotTest(unittest.TestCase):
     def test_dated_loader_requires_start_and_end(self):
-        from gads.logbook import RunLog
-        from gads.normalize import records_from_snapshot
+        from gads.core.logbook import RunLog
+        from gads.core.normalize import records_from_snapshot
         with tempfile.TemporaryDirectory() as tmp:
             snap = Snapshot(Path(tmp), drop_keys=["end"])
             with self.assertRaises(StopAnalysis):

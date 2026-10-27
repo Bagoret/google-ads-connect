@@ -21,12 +21,13 @@ from typing import Literal
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gads.logbook import RunLog, StopAnalysis  # noqa: E402
-from gads.cli import add_common_args, load_json_file, load_thresholds, run_cli  # noqa: E402
-from gads.metrics import fmt, group_by  # noqa: E402
-from gads.normalize import records_from_snapshot, unique_dir  # noqa: E402
-from gads.viz import badge, bar_chart, caveats_card, page, source_note, tile  # noqa: E402
-from gads.validate import account_timezone, check_single_currency, check_unique, parse_now, partial_data_caveats  # noqa: E402
+from gads.core.logbook import RunLog, StopAnalysis  # noqa: E402
+from gads.analysis.config import load_thresholds  # noqa: E402
+from gads.core.cli import add_common_args, load_json_file, run_cli  # noqa: E402
+from gads.core.metrics import fmt, group_by  # noqa: E402
+from gads.core.normalize import records_from_snapshot, unique_dir  # noqa: E402
+from gads.present.viz import badge, bar_chart, caveats_card, page, source_note, tile  # noqa: E402
+from gads.core.validate import account_timezone, check_single_currency, check_unique, parse_now, partial_data_caveats  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 COVERAGE_NOTE = ("The search-terms data does not include every search query: Google withholds low-volume "

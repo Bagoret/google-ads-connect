@@ -5,7 +5,7 @@ from collections import Counter
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from .logbook import RunLog, StopAnalysis
+from gads.core.logbook import RunLog, StopAnalysis
 
 
 def check_unique(records: list[dict], key: tuple[str, ...]) -> None:

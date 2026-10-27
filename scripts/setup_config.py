@@ -32,8 +32,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gads.files import write_private_json  # noqa: E402
-from gads.ids import parse_customer_id  # noqa: E402
+from gads.core.files import write_private_json  # noqa: E402
+from gads.core.ids import parse_customer_id  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SERVER_NAME = "google-ads-mcp"
@@ -41,7 +41,7 @@ SERVER_VERSION = "0.0.5"  # the version this repo's contract tests were built ag
 SERVER_SPEC = f"{SERVER_NAME}=={SERVER_VERSION}"
 SERVER_PYTHONS = ((3, 10), (3, 13))  # inclusive; google-ads-mcp needs >=3.10, newer ones may lack grpcio wheels
 DEFAULT_VENV = Path.home() / ".local" / "share" / "google-ads-os" / "mcp-venv"
-SHIM_SOURCE = Path(__file__).resolve().parent / "gads" / "macver_shim.py"
+SHIM_SOURCE = Path(__file__).resolve().parent / "gads" / "connect" / "macver_shim.py"
 SHIM_MODULE = "google_ads_os_macver"
 PROBE = r"""
 import json, platform, sys

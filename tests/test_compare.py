@@ -7,8 +7,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from gads.compare import Period, equivalence, pct_change  # noqa: E402
-from gads.logbook import StopAnalysis  # noqa: E402
+from gads.core.compare import Period, equivalence, pct_change  # noqa: E402
+from gads.core.logbook import StopAnalysis  # noqa: E402
 
 
 class PeriodTest(unittest.TestCase):
