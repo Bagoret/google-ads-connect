@@ -49,6 +49,7 @@ constraints, promotions), `knowledge/shopping-principles.md`, `context/account-m
 
 ## Validation and stop conditions
 - Script exit 2 (duplicates, missing currency, margin without definition, invalid margin rate, wrong snapshot type) → stop and report.
+- Script exit code 3 → the main outputs were written but an optional part (dashboard page or AI section) failed and was skipped. Tell the user which part, keep using the main outputs, and point to the traceback (re-run with `GADS_STRICT=1` to debug). Never present exit 3 as a clean run.
 - Join mismatch above roughly a third of items → stop and confirm the ID format with the user.
 
 ## Output schema

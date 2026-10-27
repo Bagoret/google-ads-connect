@@ -84,6 +84,7 @@ engine, so its numbers match the report. Point the user to the file; do not past
 
 ## Stop conditions
 - Script exit code 2 → report the STOP reason, what is needed to resolve it, and stop.
+- Script exit code 3 → the main outputs were written but an optional part (dashboard page or AI section) failed and was skipped. Tell the user which part, keep using the main outputs, and point to the traceback (re-run with `GADS_STRICT=1` to debug). Never present exit 3 as a clean run.
 - Snapshot query is not `campaign_daily`, or `inspect_snapshot.py` shows an unknown shape.
 - The user asks for an account change → explain that this skill only proposes; changes go through
   the approval pipeline (`docs/write-path.md`) and are recorded in `decisions/change-log.md` only after approval.

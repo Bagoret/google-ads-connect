@@ -213,11 +213,13 @@ class FaultIsolationTest(unittest.TestCase):
             code = dashboard.main(self.WEEKLY + ["--out", tmp])
             out = next(Path(tmp).iterdir())
             html = (out / "index.html").read_text()
-            self.assertEqual(code, 0)
+            self.assertEqual(code, 3)  # finished, with an optional part skipped
             self.assertIn("AI analysis is unavailable", html)
             self.assertIn("273.00 EUR", html)  # the engine's numbers are still there
             self.assertFalse((out / "facts.json").exists())
         self.assertIn("AI analysis skipped", err.getvalue())
+        self.assertIn("Traceback (most recent call last)", err.getvalue())
+        self.assertIn("1 optional part skipped", err.getvalue())
 
     def test_invalid_insights_file_only_replaces_the_insights_section(self):
         import dashboard
@@ -228,7 +230,7 @@ class FaultIsolationTest(unittest.TestCase):
                 code = dashboard.main(self.WEEKLY + ["--insights", str(bad), "--out", tmp + "/o"])
             out = next(Path(tmp, "o").iterdir())
             html = (out / "index.html").read_text()
-            self.assertEqual(code, 0)
+            self.assertEqual(code, 3)
             self.assertIn("insights file could not be used", html)
             self.assertIn('id="ask"', html)                  # the Ask box still works
             self.assertTrue((out / "facts.json").exists())   # and has its facts
@@ -262,12 +264,45 @@ class FaultIsolationTest(unittest.TestCase):
                     contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as err:
                 code = module.main(args + ["--out", tmp])
                 out = next(Path(tmp).iterdir())
-                self.assertEqual(code, 0)
+                self.assertEqual(code, 3)
                 self.assertTrue((out / data_file).exists())
                 self.assertTrue((out / "review.md").exists())
                 self.assertFalse((out / "dashboard.html").exists())
                 self.assertIn("(dashboard page) skipped", err.getvalue())
+                self.assertIn("RuntimeError: synthetic page bug", err.getvalue())  # full traceback, not just a line
+                self.assertIn("Traceback (most recent call last)", err.getvalue())
                 json.loads((out / data_file).read_text())
+
+
+class GuardBehaviourTest(unittest.TestCase):
+    """The optional-part guard: traceback shown, exit 3, strict mode, disk errors not swallowed."""
+
+    def setUp(self):
+        from gads.core import cli
+        self.cli = cli
+        cli.SKIPPED.clear()
+
+    def test_clean_run_exits_0_and_skipped_run_exits_3(self):
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(self.cli.run_cli(lambda a: "out", None), 0)
+
+            def degraded(_):
+                self.cli.guarded("demo part", lambda: 1 / 0)
+                return "out"
+            self.assertEqual(self.cli.run_cli(degraded, None), 3)
+
+    def test_strict_mode_raises_instead_of_skipping(self):
+        with mock.patch.dict("os.environ", {"GADS_STRICT": "1"}), self.assertRaises(ZeroDivisionError):
+            self.cli.guarded("demo part", lambda: 1 / 0)
+        self.assertEqual(self.cli.SKIPPED, [])
+
+    def test_disk_errors_are_not_swallowed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "missing-dir" / "page.html"  # parent does not exist -> OSError on write
+            with self.assertRaises(OSError):
+                self.cli.write_optional(target, lambda: "<html>", "dashboard page")
+        with self.assertRaises(OSError):
+            self.cli.guarded("demo part", lambda: open("/nonexistent/x"))
 
 
 if __name__ == "__main__":

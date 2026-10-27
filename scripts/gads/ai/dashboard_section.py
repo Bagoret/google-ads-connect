@@ -4,11 +4,11 @@ dashboard.py builds these behind a guard: if anything here fails, the rest of th
 from __future__ import annotations
 
 import json
-import sys
 from html import escape
 from pathlib import Path
 
 from gads.ai.insights import build_facts, validate_insights
+from gads.core.cli import guarded
 from gads.weekly.analysis import Review
 from gads.ui.viz import badge
 
@@ -97,9 +97,7 @@ def build(review: Review, insights_path: Path | None) -> tuple[dict, str, str]:
     The insights file is outside input, so a problem with it only replaces the insights section: facts.json and the
     Ask box still work."""
     facts_doc = facts_document(review)
-    try:
-        insights_html = ai_section(insights_path, facts_doc["facts"])
-    except Exception as exc:  # noqa: BLE001 - a bad insights file must not take facts.json or the Ask box with it
-        print(f"Warning: AI insights skipped ({type(exc).__name__}: {exc})", file=sys.stderr)
-        insights_html = INSIGHTS_UNAVAILABLE.format(escape(type(exc).__name__))
+    # a bad insights file must not take facts.json or the Ask box with it
+    insights_html = guarded("AI insights", lambda: ai_section(insights_path, facts_doc["facts"]),
+                            lambda exc: INSIGHTS_UNAVAILABLE.format(escape(type(exc).__name__)))
     return facts_doc, f"{insights_html}\n{ASK_SECTION}", ASK_JS
