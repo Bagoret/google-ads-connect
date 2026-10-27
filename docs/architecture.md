@@ -23,8 +23,8 @@ feature, the computation is kept apart from pages and reports. `tests/test_archi
 | **ui** | Page kit: charts, tiles, the self-contained page shell | `gads/ui/viz.py` | core |
 | **connect** | Google's MCP server: read-only client, `.mcp.json` loading, macOS shim | `gads/connect/` | core |
 | **weekly** | `analysis` (weekly review) · `findings` (rules) · `report` (Markdown) · `dashboard` (page) | `gads/weekly/` | core, ui |
-| **search_terms** | `analysis` (brand classes, weak terms, conflicts) · `page` (Markdown + page) | `gads/search_terms/` | core, ui |
-| **products** | `analysis` (item performance, margin join) · `page` (Markdown + page) | `gads/products/` | core, ui |
+| **search_terms** | `analysis` (brand classes, weak terms, conflicts) · `report` (Markdown) · `page` (HTML) | `gads/search_terms/` | core, ui |
+| **products** | `analysis` (item performance, margin join) · `report` (Markdown) · `page` (HTML) | `gads/products/` | core, ui |
 | **changes** | `pipeline` (approval-gated requests, writes disabled) · `store` (saved requests) · `page` (status page) | `gads/changes/` | core, ui |
 | **onboarding** | `context` (which business facts are still UNKNOWN) | `gads/onboarding/` | core |
 | **ai** | `insights` (verified `{{fact.key}}` text) · `dashboard_section` (facts.json, AI and Ask sections) | `gads/ai/` | core, ui, weekly |
@@ -39,13 +39,17 @@ feature, the computation is kept apart from pages and reports. `tests/test_archi
 **Where to look:** the problem's feature is the folder. "The product review numbers look wrong" → `gads/products/analysis.py`;
 "the product page looks wrong" → `gads/products/page.py`; "can't fetch data" → `gads/connect/`.
 
-**Exit codes** (all scripts):
+**Exit codes** of the review scripts (`weekly_review`, `dashboard`, `search_terms`, `product_review`):
 | Code | Meaning |
 |---|---|
 | 0 | Done |
 | 2 | `STOP:` — the data or inputs failed a check; the reason is printed and nothing is written |
 | 3 | Done, but an **optional part** failed and was skipped (a dashboard page, the AI section). The main outputs are written; the full traceback with file and line is printed, followed by a summary line |
 | 1 | Unexpected error (a bug in a main part); Python prints the traceback |
+
+Other scripts keep their own documented codes: `check_connection.py` and `check_insights.py` exit 1 when the check
+fails or an insight is rejected; `setup_config.py` exits 3 when a config already exists and needs `--replace`
+(`setup_mac.sh` then asks you).
 
 **Strict mode:** `GADS_STRICT=1 python3 scripts/<script>.py …` turns the optional-part safety net off, so the error
 stops the run like any other (useful while fixing it). Disk errors are never caught by the safety net.
@@ -55,7 +59,7 @@ stops the run like any other (useful while fixing it). Disk errors are never cau
 |---|---|
 | A bad or invalid `insights.json` | Everything except the insights section (notice shown; exit 3); `facts.json` and the Ask box work |
 | The `ai` package | The dashboard (with a notice; exit 3) and every report |
-| A page in `search_terms` or `products` | `candidates.json` / `products.json` and `review.md` (exit 3) |
+| A page in `search_terms` or `products` (even one that fails to load) | `candidates.json` / `products.json` and `review.md` (exit 3); the page module is only loaded inside the guard |
 | Any one feature | Every other feature (rule 2) |
 | `ui` | All computation in every feature (rule 3) |
 | `connect` | Every review of snapshots already saved in `data/raw/` |
@@ -71,6 +75,6 @@ stops the run like any other (useful while fixing it). Disk errors are never cau
    search_terms → `test_search_terms`, `test_review_dashboards`; products → `test_product_review`, `test_review_dashboards`;
    ai → `test_insights`, `test_ask_server`; changes → `test_changes`, `test_change_requests`;
    onboarding → `test_context_status`, `test_first_run`; Mac setup → `test_setup_config`, `test_setup_mac`.
-3. A new feature: a package `gads/<feature>/` with `analysis.py` (returns a result dataclass) and `page.py`, a thin
-   `scripts/<feature>.py`, a row in `ALLOWED` and `COMPUTE` in `tests/test_architecture.py`, and optional outputs written
-   through `core.cli.write_optional` so a page bug never loses the data.
+3. A new feature: a package `gads/<feature>/` with `analysis.py` (returns a result dataclass), `report.py` (main text
+   output) and `page.py` (optional HTML), a thin `scripts/<feature>.py` that loads `page` only inside
+   `core.cli.write_optional`, and a row in `ALLOWED` and `COMPUTE` in `tests/test_architecture.py`.

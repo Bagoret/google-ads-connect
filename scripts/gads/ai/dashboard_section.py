@@ -87,8 +87,8 @@ def facts_document(review: Review) -> dict:
             "synthetic": review.data.snapshot.synthetic}
 
 
-INSIGHTS_UNAVAILABLE = ('<section class="card"><h2>AI analysis</h2><p class="muted">The AI insights file could not be '
-                        'used ({}); run scripts/check_insights.py on it. The Ask box below still works.</p></section>')
+INSIGHTS_UNAVAILABLE = ('<section class="card"><h2>AI analysis</h2><p class="muted">The AI insights could not be used '
+                        'or rendered ({}); run scripts/check_insights.py on the file. The Ask box below still works.</p></section>')
 
 
 def build(review: Review, insights_path: Path | None) -> tuple[dict, str, str]:

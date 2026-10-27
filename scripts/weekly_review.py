@@ -7,7 +7,8 @@ Usage:
       [--expected-currency EUR] [--conversion-lag-days N] [--target-roas X] [--target-cpa Y]
 
 Only pass --conversion-lag-days / --target-* values that are recorded (not UNKNOWN) in context/.
-Exit code 2 = analysis stopped (reason printed); no output is written in that case.
+Exit codes: 0 = done · 2 = stopped (reason printed, nothing written) · 3 = done, but an optional part was skipped
+(full traceback printed; set GADS_STRICT=1 to fail loudly instead).
 """
 from __future__ import annotations
 

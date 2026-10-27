@@ -231,7 +231,7 @@ class FaultIsolationTest(unittest.TestCase):
             out = next(Path(tmp, "o").iterdir())
             html = (out / "index.html").read_text()
             self.assertEqual(code, 3)
-            self.assertIn("insights file could not be used", html)
+            self.assertIn("AI insights could not be used", html)
             self.assertIn('id="ask"', html)                  # the Ask box still works
             self.assertTrue((out / "facts.json").exists())   # and has its facts
             self.assertIn("AI insights skipped", err.getvalue())
@@ -250,17 +250,17 @@ class FaultIsolationTest(unittest.TestCase):
         import search_terms
         fix = ROOT / "tests" / "fixtures"
         cases = [
-            (search_terms, "render_search_dashboard",
+            (search_terms, "gads.search_terms.page.render_search_dashboard",
              ["--search-terms", str(fix / "synthetic_search_terms.json"), "--keywords", str(fix / "synthetic_keywords.json"),
               "--negatives", str(fix / "synthetic_negatives.json"), "--now", "2026-10-25T09:00:00+00:00"],
              "candidates.json"),
-            (product_review, "render_product_dashboard",
+            (product_review, "gads.products.page.render_product_dashboard",
              ["--products", str(fix / "synthetic_product_daily.json"), "--now", "2026-10-25T09:00:00+00:00"],
              "products.json"),
         ]
         for module, renderer, args, data_file in cases:
             with self.subTest(module.__name__), tempfile.TemporaryDirectory() as tmp, \
-                    mock.patch.object(module, renderer, side_effect=RuntimeError("synthetic page bug")), \
+                    mock.patch(renderer, side_effect=RuntimeError("synthetic page bug")), \
                     contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as err:
                 code = module.main(args + ["--out", tmp])
                 out = next(Path(tmp).iterdir())
@@ -272,6 +272,34 @@ class FaultIsolationTest(unittest.TestCase):
                 self.assertIn("RuntimeError: synthetic page bug", err.getvalue())  # full traceback, not just a line
                 self.assertIn("Traceback (most recent call last)", err.getvalue())
                 json.loads((out / data_file).read_text())
+
+
+class PageImportFailureTest(unittest.TestCase):
+    """Even a page module that cannot be imported at all leaves the data and the Markdown review intact."""
+
+    def test_unimportable_page_module_keeps_main_outputs(self):
+        import product_review
+        import search_terms
+        fix = ROOT / "tests" / "fixtures"
+        cases = [
+            (search_terms, "gads.search_terms.page",
+             ["--search-terms", str(fix / "synthetic_search_terms.json"), "--keywords", str(fix / "synthetic_keywords.json"),
+              "--negatives", str(fix / "synthetic_negatives.json"), "--now", "2026-10-25T09:00:00+00:00"],
+             "candidates.json"),
+            (product_review, "gads.products.page",
+             ["--products", str(fix / "synthetic_product_daily.json"), "--now", "2026-10-25T09:00:00+00:00"],
+             "products.json"),
+        ]
+        for module, page_module, args, data_file in cases:
+            with self.subTest(module.__name__), tempfile.TemporaryDirectory() as tmp, \
+                    mock.patch.dict(sys.modules, {page_module: None}), \
+                    contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                code = module.main(args + ["--out", tmp])
+                out = next(Path(tmp).iterdir())
+                self.assertEqual(code, 3)
+                self.assertTrue((out / data_file).exists())
+                self.assertTrue((out / "review.md").exists())
+                self.assertFalse((out / "dashboard.html").exists())
 
 
 class GuardBehaviourTest(unittest.TestCase):

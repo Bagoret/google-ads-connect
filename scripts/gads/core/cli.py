@@ -34,7 +34,9 @@ def load_json_file(path: Path, what: str):
         raise StopAnalysis(f"{what} {path} is not valid JSON")
 
 
-SKIPPED: list[str] = []  # optional parts skipped in this run
+# Optional parts skipped in this run. Process-global on purpose (one run per process): run_cli() clears it at the
+# start and reports it at the end; guarded() calls anywhere in the run (including inside components) append to it.
+SKIPPED: list[str] = []
 
 
 def strict() -> bool:

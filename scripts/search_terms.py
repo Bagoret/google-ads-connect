@@ -6,10 +6,14 @@ search-term-review skill (Claude + human) — this script never labels a term "i
 Usage:
   python3 scripts/search_terms.py --search-terms <snap> --keywords <snap> --negatives <snap> \
       [--shared-negatives <snap> --campaign-shared-sets <snap>] [--brand-lists config/brand_lists.json]
+
+Exit codes: 0 = done · 2 = stopped (reason printed, nothing written) · 3 = done, but an optional part was skipped
+(full traceback printed; set GADS_STRICT=1 to fail loudly instead).
 """
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import sys
 from pathlib import Path
@@ -19,8 +23,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gads.search_terms.analysis import COVERAGE_NOTE, analyse  # noqa: E402
 from gads.core.cli import add_common_args, run_cli, write_optional  # noqa: E402
 from gads.core.files import ROOT, unique_dir  # noqa: E402
-from gads.search_terms.page import render_search_dashboard, render_search_markdown  # noqa: E402
+from gads.search_terms.report import render_search_markdown  # noqa: E402
 
+
+
+def _page():
+    """The HTML page module, loaded inside the optional-part guard: even an import error in it only skips the page."""
+    return importlib.import_module("gads.search_terms.page")
 
 
 def run(args) -> Path:
@@ -34,7 +43,7 @@ def run(args) -> Path:
     }, indent=2, ensure_ascii=False), encoding="utf-8")
     (out / "review.md").write_text(render_search_markdown(r), encoding="utf-8")
     write_optional(out / "dashboard.html",
-                   lambda: render_search_dashboard(snap, r.currency, r.caveats, r.rows, r.conflicts, r.log), "dashboard page")
+                   lambda: _page().render_search_dashboard(snap, r.currency, r.caveats, r.rows, r.conflicts, r.log), "dashboard page")
     return out
 
 

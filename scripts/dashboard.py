@@ -8,7 +8,8 @@ Usage:
       [--conversion-lag-days N] [--target-roas X] [--target-cpa Y]
 
 Writes outputs/dashboard_<customer>_<start>_<end>/index.html (gitignored). Open it in a browser.
-Exit code 2 = analysis stopped (reason printed); nothing is written in that case.
+Exit codes: 0 = done · 2 = stopped (reason printed, nothing written) · 3 = done, but an optional part was skipped
+(full traceback printed; set GADS_STRICT=1 to fail loudly instead).
 """
 from __future__ import annotations
 
@@ -23,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from gads.weekly.analysis import add_weekly_args, build_review  # noqa: E402
 from gads.core.logbook import StopAnalysis  # noqa: E402
-from gads.core.cli import SKIPPED, finish, guarded  # noqa: E402
+from gads.core.cli import guarded, run_cli  # noqa: E402
 from gads.core.files import unique_dir  # noqa: E402
 from gads.weekly.dashboard import render_dashboard  # noqa: E402
 
@@ -44,23 +45,20 @@ def main(argv: list[str] | None = None) -> int:
     parser = add_weekly_args(argparse.ArgumentParser(description=__doc__,
                                                      formatter_class=argparse.RawDescriptionHelpFormatter))
     parser.add_argument("--insights", type=Path, help="insights.json written by Claude (validated before display)")
-    args = parser.parse_args(argv)
+    return run_cli(run, parser.parse_args(argv))
+
+
+def run(args) -> Path:
     if args.insights and not args.insights.is_file():
-        print(f"STOP: --insights file not found: {args.insights}", file=sys.stderr)
-        return 2
-    SKIPPED.clear()
-    try:
-        review = build_review(args)
-    except StopAnalysis as exc:
-        print(f"STOP: {exc.reason}", file=sys.stderr)
-        return 2
+        raise StopAnalysis(f"--insights file not found: {args.insights}")
+    review = build_review(args)
     facts_doc, ai_html, ai_js = ai_parts(review, args.insights)
     html = render_dashboard(review, datetime.now(timezone.utc), ai_html, ai_js)
     out = unique_dir(args.out, f"dashboard_{review.ctx.customer_id}_{review.ctx.current.start}_{review.ctx.current.end}")
     (out / "index.html").write_text(html, encoding="utf-8")
     if facts_doc is not None:
         (out / "facts.json").write_text(json.dumps(facts_doc, indent=2, ensure_ascii=False), encoding="utf-8")
-    return finish(out / "index.html")
+    return out / "index.html"
 
 
 if __name__ == "__main__":
