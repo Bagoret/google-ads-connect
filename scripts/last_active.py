@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shlex
 import sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -20,9 +19,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from gads.connect.activity import DEFAULT_LOOKBACK_DAYS, find_last_active  # noqa: E402
-from gads.connect.mcp_config import load_server_config  # noqa: E402
+from gads.connect.mcp_config import server_command  # noqa: E402
 from gads.core.files import ROOT  # noqa: E402
-from gads.core.ids import parse_customer_id  # noqa: E402
+from gads.core.ids import require_customer_id  # noqa: E402
 from gads.core.logbook import StopAnalysis  # noqa: E402
 
 
@@ -42,12 +41,10 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        customer_id = parse_customer_id(args.customer_id)
-        if not customer_id:
-            raise StopAnalysis(f"not a 10-digit Google Ads customer ID: {args.customer_id!r}")
+        customer_id = require_customer_id(args.customer_id)
         if not 1 <= args.lookback_days <= 3650 or args.days < 1:
             raise StopAnalysis("--lookback-days must be 1-3650 and --days at least 1")
-        cmd, env = (shlex.split(args.server_cmd), {}) if args.server_cmd else load_server_config(ROOT / ".mcp.json")
+        cmd, env = server_command(args.server_cmd, ROOT / ".mcp.json")
         act = find_last_active(customer_id, cmd, env, args.raw_dir, args.end or date.today() - timedelta(days=1),
                                args.lookback_days)
     except StopAnalysis as exc:

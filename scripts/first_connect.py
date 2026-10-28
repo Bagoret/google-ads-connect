@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shlex
 import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -25,9 +24,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from gads.connect.activity import find_last_active  # noqa: E402
-from gads.connect.mcp_config import load_server_config  # noqa: E402
+from gads.connect.mcp_config import server_command  # noqa: E402
 from gads.core.files import ROOT, unique_dir  # noqa: E402
-from gads.core.ids import parse_customer_id  # noqa: E402
+from gads.core.ids import require_customer_id  # noqa: E402
 from gads.core.logbook import StopAnalysis  # noqa: E402
 from gads.onboarding.first_connect import run  # noqa: E402
 from gads.onboarding.first_connect_report import render_markdown, summary  # noqa: E402
@@ -63,15 +62,10 @@ def choose_end(customer_id: str, cmd: list[str], env: dict, raw_dir: Path, yeste
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        customer_id = parse_customer_id(args.customer_id)
-        if not customer_id:
-            raise StopAnalysis(f"not a 10-digit Google Ads customer ID: {args.customer_id!r}")
+        customer_id = require_customer_id(args.customer_id)
         if args.days < 1:
             raise StopAnalysis("--days must be at least 1")
-        if args.server_cmd:
-            cmd, env = shlex.split(args.server_cmd), {}
-        else:
-            cmd, env = load_server_config(ROOT / ".mcp.json")
+        cmd, env = server_command(args.server_cmd, ROOT / ".mcp.json")
     except StopAnalysis as exc:
         print(f"STOP: {exc.reason}", file=sys.stderr)
         return 2

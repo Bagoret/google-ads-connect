@@ -62,12 +62,23 @@ command -v git >/dev/null 2>&1 || stop "git not found."
 [[ "$PROJECT_ID" =~ ^[a-z][a-z0-9-]{4,28}[a-z0-9]$ ]] || stop "pass --project-id with your Google Cloud project ID."
 [[ "$REGION" =~ ^[a-z]+-[a-z]+[0-9]+$ ]] || stop "--region looks wrong: $REGION"
 
+ACCOUNT="$(gcloud config get-value account 2>/dev/null || true)"
+[ -n "$ACCOUNT" ] || stop "gcloud is not signed in. Run: gcloud auth login"
+PROJECT_NUMBER="$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)' 2>/dev/null || true)"
+[ -n "$PROJECT_NUMBER" ] || stop "cannot read project $PROJECT_ID (wrong ID, or this Google account has no access)."
+URL="https://${SERVICE}-${PROJECT_NUMBER}.${REGION}.run.app"
+
+server_answers() {  # the server's sign-in metadata is reachable
+  local code
+  code="$(curl -s -o /dev/null -w '%{http_code}' "$URL/.well-known/oauth-authorization-server" || true)"
+  if [ "$code" = "200" ]; then ok "server answers (sign-in metadata reachable)"; return 0; fi
+  echo "   ✕ sign-in metadata returned HTTP ${code:-none}; logs: gcloud run services logs read $SERVICE --region $REGION --project $PROJECT_ID"
+  return 1
+}
+
 status_report() {  # read-only: describes what is deployed; never prints a secret value
-  local number url json code rc=0
+  local json rc=0
   echo "Status of $SERVICE in project $PROJECT_ID, region $REGION (read-only)."
-  number="$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)' 2>/dev/null || true)"
-  [ -n "$number" ] || stop "cannot read project $PROJECT_ID (wrong ID, or this Google account has no access)."
-  url="https://${SERVICE}-${number}.${REGION}.run.app"
   if ! json="$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT_ID" --format=json 2>/dev/null)"; then
     echo "   ✕ service: not deployed in $REGION (run this script without --status to deploy)"
     return 1
@@ -102,26 +113,20 @@ PY
     else echo "   ✕ secret $secret: missing or no enabled version"; rc=1; fi
   done
   echo "   The server reads its secrets when it starts: after replacing one, redeploy (re-run without --status)."
-  code="$(curl -s -o /dev/null -w '%{http_code}' "$url/.well-known/oauth-authorization-server" || true)"
-  if [ "$code" = "200" ]; then echo "   ✓ server answers (sign-in metadata reachable)"
-  else echo "   ✕ sign-in metadata returned HTTP ${code:-none}; logs: gcloud run services logs read $SERVICE --region $REGION --project $PROJECT_ID"; rc=1; fi
-  echo "   Connector address: $url/mcp"
-  echo "   Check in the console: the Web client with this ID exists and lists $url/auth/callback and"
+  server_answers || rc=1
+  echo "   Connector address: $URL/mcp"
+  echo "   Check in the console: the Web client with this ID exists and lists $URL/auth/callback and"
   echo "   https://claude.ai/api/mcp/auth_callback; your Google account is a test user (Audience)."
   return $rc
 }
 if [ "$STATUS" = 1 ]; then
-  status_report && exit 0 || exit 1
+  if status_report; then exit 0; else exit 1; fi
 fi
 
 echo "Google Ads MCP server -> Cloud Run (read-only). Project $PROJECT_ID, region $REGION.$([ "$DRY_RUN" = 1 ] && echo ' DRY RUN.')"
 
 step "1/6 Project, billing and APIs"
-ACCOUNT="$(gcloud config get-value account 2>/dev/null || true)"
-[ -n "$ACCOUNT" ] || stop "gcloud is not signed in. Run: gcloud auth login"
 ok "signed in to gcloud"
-PROJECT_NUMBER="$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)' 2>/dev/null || true)"
-[ -n "$PROJECT_NUMBER" ] || stop "cannot read project $PROJECT_ID (wrong ID, or this Google account has no access)."
 BILLING="$(gcloud billing projects describe "$PROJECT_ID" --format='value(billingEnabled)' 2>/dev/null || true)"
 if [ "$BILLING" != "True" ] && [ "$BILLING" != "true" ]; then
   stop "billing is not enabled for $PROJECT_ID. Console: Billing -> link a billing account, and set a budget alert (Billing -> Budgets & alerts, e.g. 1 EUR). Then re-run."
@@ -134,7 +139,6 @@ else
   stop "the APIs are required."
 fi
 
-URL="https://${SERVICE}-${PROJECT_NUMBER}.${REGION}.run.app"
 CALLBACK="${URL}/auth/callback"
 IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${SERVICE}:${TAG#v}"
 SA="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
@@ -242,9 +246,7 @@ if [ "$DRY_RUN" = 0 ]; then
   if [ -n "$ACTUAL" ] && [ "$ACTUAL" != "$URL" ]; then
     echo "   Note: Cloud Run reports $ACTUAL; both addresses reach the same service. The server uses $URL."
   fi
-  CODE="$(curl -s -o /dev/null -w '%{http_code}' "$URL/.well-known/oauth-authorization-server" || true)"
-  [ "$CODE" = "200" ] && ok "server answers (sign-in metadata reachable)" || \
-    echo "   Warning: sign-in metadata returned HTTP $CODE; check: gcloud run services logs read $SERVICE --region $REGION --project $PROJECT_ID"
+  server_answers || true
 fi
 
 cat <<EOF
