@@ -3,6 +3,7 @@
 # as a custom connector. Run it in Google Cloud Shell (shell.cloud.google.com): gcloud and git are already there.
 #
 #   bash scripts/deploy_cloud_run.sh --project-id YOUR_PROJECT_ID [--region us-central1] [--dry-run]
+#   bash scripts/deploy_cloud_run.sh --project-id YOUR_PROJECT_ID --status   # read-only health check
 #
 # What it does (asks before each step that changes your project; re-running is safe):
 #   1. checks billing is enabled and turns on the APIs it needs (Cloud Run, Cloud Build, Artifact Registry,
@@ -11,8 +12,13 @@
 #   3. creates a Firestore database (keeps sign-ins across restarts) and a dedicated service account;
 #   4. stores the Web OAuth client secret and a generated signing key in Secret Manager (never on the command line);
 #   5. deploys the service (public address; Google sign-in is the gate) and checks it answers.
-# --dry-run prints every gcloud command instead of running it. Secrets are never printed. See docs/hosted-connector.md.
+# --dry-run prints every gcloud command instead of running it. --status changes nothing: it shows the deployed
+# revision, the client ID in use, when each secret was last replaced (never its value) and whether the server answers.
+# Secrets are never printed. See docs/hosted-connector.md.
 set -euo pipefail
+# gcloud must never wait on a question of its own: its output is often hidden here, so a prompt would look like a
+# hang. With prompts off it fails with a visible error instead; this script asks its own y/N questions.
+export CLOUDSDK_CORE_DISABLE_PROMPTS=1
 
 UPSTREAM="https://github.com/googleads/google-ads-mcp"
 TAG="v0.0.5"
@@ -23,6 +29,7 @@ PROJECT_ID=""
 REGION="us-central1"
 FIRESTORE_LOCATION="nam5"
 DRY_RUN=0
+STATUS=0
 APIS="run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com firestore.googleapis.com secretmanager.googleapis.com googleads.googleapis.com"
 
 while [ $# -gt 0 ]; do
@@ -31,7 +38,8 @@ while [ $# -gt 0 ]; do
     --region) [ $# -ge 2 ] || { echo "--region needs a value" >&2; exit 2; }; REGION="$2"; shift 2 ;;
     --firestore-location) [ $# -ge 2 ] || { echo "--firestore-location needs a value" >&2; exit 2; }; FIRESTORE_LOCATION="$2"; shift 2 ;;
     --dry-run) DRY_RUN=1; shift ;;
-    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    --status) STATUS=1; shift ;;
+    -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1 (try --help)" >&2; exit 2 ;;
   esac
 done
@@ -53,6 +61,58 @@ command -v gcloud >/dev/null 2>&1 || stop "gcloud not found. Open Google Cloud S
 command -v git >/dev/null 2>&1 || stop "git not found."
 [[ "$PROJECT_ID" =~ ^[a-z][a-z0-9-]{4,28}[a-z0-9]$ ]] || stop "pass --project-id with your Google Cloud project ID."
 [[ "$REGION" =~ ^[a-z]+-[a-z]+[0-9]+$ ]] || stop "--region looks wrong: $REGION"
+
+status_report() {  # read-only: describes what is deployed; never prints a secret value
+  local number url json code rc=0
+  echo "Status of $SERVICE in project $PROJECT_ID, region $REGION (read-only)."
+  number="$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)' 2>/dev/null || true)"
+  [ -n "$number" ] || stop "cannot read project $PROJECT_ID (wrong ID, or this Google account has no access)."
+  url="https://${SERVICE}-${number}.${REGION}.run.app"
+  if ! json="$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT_ID" --format=json 2>/dev/null)"; then
+    echo "   ✕ service: not deployed in $REGION (run this script without --status to deploy)"
+    return 1
+  fi
+  SERVICE_JSON="$json" python3 - <<'PY' || { echo "   ✕ could not read the service description"; rc=1; }
+import json, os
+s = json.loads(os.environ["SERVICE_JSON"])
+container = s["spec"]["template"]["spec"]["containers"][0]
+env = {e["name"]: e for e in container.get("env", [])}
+def show(name):
+    e = env.get(name)
+    if e is None:
+        return "NOT SET"
+    if "value" in e:
+        return e["value"]
+    ref = e.get("valueFrom", {}).get("secretKeyRef", {})
+    return "from Secret Manager %s:%s" % (ref.get("name"), ref.get("key"))
+st = s.get("status", {})
+ready = next((c for c in st.get("conditions", []) if c.get("type") == "Ready"), {})
+print("   service: %s (ready: %s)" % (st.get("url", "?"), ready.get("status", "?")))
+print("   revision: %s, deployed %s" % (st.get("latestReadyRevisionName", "?"), ready.get("lastTransitionTime", "?")))
+print("   image: %s" % container.get("image", "?"))
+for label, name in (("client ID", "GOOGLE_ADS_MCP_OAUTH_CLIENT_ID"), ("client secret", "GOOGLE_ADS_MCP_OAUTH_CLIENT_SECRET"),
+                    ("base URL", "GOOGLE_ADS_MCP_BASE_URL"), ("sign-in storage", "GOOGLE_ADS_MCP_STORAGE_TYPE")):
+    print("   %s: %s" % (label, show(name)))
+PY
+  local secret when
+  for secret in google-ads-mcp-client-secret google-ads-mcp-jwt-key; do
+    when="$(gcloud secrets versions list "$secret" --project "$PROJECT_ID" --filter='state=ENABLED' \
+            --sort-by='~createTime' --limit=1 --format='value(name,createTime)' 2>/dev/null || true)"
+    if [ -n "$when" ]; then echo "   secret $secret: latest enabled version $when (value not shown)"
+    else echo "   ✕ secret $secret: missing or no enabled version"; rc=1; fi
+  done
+  echo "   The server reads its secrets when it starts: after replacing one, redeploy (re-run without --status)."
+  code="$(curl -s -o /dev/null -w '%{http_code}' "$url/.well-known/oauth-authorization-server" || true)"
+  if [ "$code" = "200" ]; then echo "   ✓ server answers (sign-in metadata reachable)"
+  else echo "   ✕ sign-in metadata returned HTTP ${code:-none}; logs: gcloud run services logs read $SERVICE --region $REGION --project $PROJECT_ID"; rc=1; fi
+  echo "   Connector address: $url/mcp"
+  echo "   Check in the console: the Web client with this ID exists and lists $url/auth/callback and"
+  echo "   https://claude.ai/api/mcp/auth_callback; your Google account is a test user (Audience)."
+  return $rc
+}
+if [ "$STATUS" = 1 ]; then
+  status_report && exit 0 || exit 1
+fi
 
 echo "Google Ads MCP server -> Cloud Run (read-only). Project $PROJECT_ID, region $REGION.$([ "$DRY_RUN" = 1 ] && echo ' DRY RUN.')"
 

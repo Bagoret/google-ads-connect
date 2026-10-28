@@ -1,0 +1,3 @@
+SELECT segments.date, metrics.impressions, metrics.cost_micros
+FROM customer
+WHERE segments.date BETWEEN '{start}' AND '{end}' AND metrics.impressions > 0

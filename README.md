@@ -22,6 +22,7 @@ and tested on synthetic data. **No ad account is connected yet.**
 | Track proposed changes | – | `scripts/change_requests.py` | requests with approval history + `outputs/change-requests/status.html` |
 | Fetch data (read-only) | all | `scripts/snapshot.py`, `scripts/inspect_snapshot.py` | `data/raw/*.json` |
 | First-connection check | `onboarding` | `scripts/first_connect.py` | every query fetched and contract-checked; `report.md` with feature readiness (shareable) |
+| Last active day | all | `scripts/last_active.py` | latest day with impressions and a ready-to-use review period (for paused accounts) |
 
 Sample output, generated from labelled synthetic data: [`docs/examples/`](docs/examples/).
 

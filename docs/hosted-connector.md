@@ -74,6 +74,10 @@ hosted one also works away from your Mac) by removing the other from `claude_des
 Re-running the script is safe: it reuses what exists and asks before rebuilding or replacing a secret.
 
 ## Operating it
+- **Check what is deployed** (read-only, safe any time):
+  `bash scripts/deploy_cloud_run.sh --project-id YOUR_PROJECT_ID --status`. Shows the service address and revision,
+  the client ID the server uses, when each secret was last replaced (never the value), and whether the server answers.
+  Start here for any sign-in error.
 - **Update the server version**: change `TAG` in the script after checking the upstream release notes and this repo's
   contract tests, then re-run and choose to rebuild.
 - **Rotate the client secret**: add a new secret on the Web client, re-run the script, answer **y** to "Replace it", then
@@ -95,6 +99,9 @@ Re-running the script is safe: it reuses what exists and asks before rebuilding 
 | Google: "Access blocked … has not completed verification" | The account is not a test user (consent screen → Audience → Test users). |
 | Tool error "only approved for use with test accounts" | The project lacks Explorer access (Google Ads API → Overview → apply). |
 | Weekly "reconnect" | Expected while the consent screen is in Testing. |
+| Script seems to hang after a step heading | Fixed: gcloud's own prompts are now off, so it fails with a visible error instead. Update the repo (`git pull`) and re-run. |
+| Sign-in: "invalid_client: The provided client secret is invalid" | The stored secret is not from the Web client the server uses (often the Desktop client's secret was pasted). Add a new secret on that Web client, re-run, answer **y** to "Replace it", then **y** to deploy (the server reads secrets only at start). `--status` shows the client ID and when the secret was replaced. |
+| Google: "The OAuth client was not found" (Error 401 invalid_client) | Compare the client ID in `--status` with Google Auth Platform → Clients in the **same project**. If they match, the client is new: Google can take from minutes to a few hours to activate it; wait, then reconnect. If not, re-run with the right client ID and its secret. |
 
 **Status:** the script is tested against stub `gcloud`/`git` (commands, prompts, secret handling). The first real
 deployment and the claude.ai sign-in are not yet verified end to end.

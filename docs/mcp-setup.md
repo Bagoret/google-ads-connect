@@ -103,7 +103,8 @@ so read each prompt. The config writer is `scripts/setup_config.py` (also usable
    It checks `.mcp.json` (no placeholders, ignored by git), the launcher, the credentials file (type,
    refresh token, file permissions, location outside the repo), the server's tool contract, and whether
    your login can see the account. It never prints secret values.
-9. **First-connection check**: `python3 scripts/first_connect.py --customer-id <ID>` fetches every query in
+9. **First-connection check**: `python3 scripts/first_connect.py --customer-id <ID>` (without `--end` it first finds the
+   last day with impressions, so a paused account is checked on a period with data) fetches every query in
    `queries/` once (read-only), runs the contract gate on each response and reports which features can run
    (`outputs/first-connect_*/report.md`). The report holds field names, counts and statuses only, so you can share
    it if something fails. For a single query: `scripts/snapshot.py` then `scripts/inspect_snapshot.py`.

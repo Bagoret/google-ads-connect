@@ -21,7 +21,7 @@ feature, the computation is kept apart from pages and reports. `tests/test_archi
 |---|---|---|---|
 | **core** | Run log, IDs, files (+ repo root), CLI plumbing and exit codes, thresholds, metrics, period comparison, snapshot loading/normalising, validation | `gads/core/` | nothing else |
 | **ui** | Page kit: charts, tiles, the self-contained page shell | `gads/ui/viz.py` | core |
-| **connect** | Google's MCP server: read-only client, `.mcp.json` loading, macOS shim | `gads/connect/` | core |
+| **connect** | Google's MCP server: read-only client, `.mcp.json` loading, snapshots, last active day (`activity`), macOS shim | `gads/connect/` | core |
 | **weekly** | `analysis` (weekly review) · `findings` (rules) · `report` (Markdown) · `dashboard` (page) | `gads/weekly/` | core, ui |
 | **search_terms** | `analysis` (brand classes, weak terms, conflicts) · `report` (Markdown) · `page` (HTML) | `gads/search_terms/` | core, ui |
 | **products** | `analysis` (item performance, margin join) · `report` (Markdown) · `page` (HTML) | `gads/products/` | core, ui |

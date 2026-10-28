@@ -41,19 +41,30 @@ def value_for(field: str):
 
 def write_fixtures(folder: Path, drop: dict[str, str] | None = None, empty: set[str] = frozenset(),
                    missing: set[str] = frozenset()) -> dict[str, str]:
-    """One synthetic structured response per query resource; returns {resource: path}."""
-    mapping = {}
+    """One synthetic structured response per query resource; returns {resource: path}. Queries on the same resource
+    share one row holding the union of their fields (the fake server answers by resource)."""
+    fields: dict[str, dict[str, None]] = {}
+    dropped: dict[str, set[str]] = {}
+    empty_resources: set[str] = set()
     for q in sorted((ROOT / "queries").glob("*.gaql")):
-        parts = parse_gaql(render_query(q, date(2026, 10, 1), date(2026, 10, 1)))
         if q.stem in missing:
             continue
-        row = {f: value_for(f) for f in parts["fields"] if f != (drop or {}).get(q.stem)}
-        rows = [] if q.stem in empty else [row]
-        path = folder / f"{q.stem}.json"
+        parts = parse_gaql(render_query(q, date(2026, 10, 1), date(2026, 10, 1)))
+        res = parts["resource"]
+        fields.setdefault(res, {}).update(dict.fromkeys(parts["fields"]))
+        if (drop or {}).get(q.stem):
+            dropped.setdefault(res, set()).add(drop[q.stem])
+        if q.stem in empty:
+            empty_resources.add(res)
+    mapping = {}
+    for res, names in fields.items():
+        row = {f: value_for(f) for f in names if f not in dropped.get(res, set())}
+        rows = [] if res in empty_resources else [row]
+        path = folder / f"{res}.json"
         path.write_text(json.dumps({"_synthetic": "SYNTHETIC TEST DATA - NOT REAL",
                                     "result": {"structuredContent": {"result": rows},
                                                "content": [{"type": "text", "text": json.dumps(rows)}]}}))
-        mapping.setdefault(parts["resource"], str(path))
+        mapping[res] = str(path)
     return mapping
 
 
