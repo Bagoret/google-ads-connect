@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shlex
 from pathlib import Path
 
 from gads.core.logbook import StopAnalysis
@@ -16,6 +17,11 @@ STRUCTURED_PARAMS = {"customer_id", "fields", "resource", "conditions"}
 def find_search_tool(tools: dict[str, dict]) -> dict | None:
     """The first known search tool the server offers (tools by name), or None."""
     return next((tools[n] for n in SEARCH_TOOL_NAMES if n in tools), None)
+
+
+def server_command(override: str | None, config_path: Path) -> tuple[list[str], dict]:
+    """The server command and env: the --server-cmd override (a quoted string, for tests) or .mcp.json."""
+    return (shlex.split(override), {}) if override else load_server_config(config_path)
 
 
 def load_server_config(path: Path) -> tuple[list[str], dict]:

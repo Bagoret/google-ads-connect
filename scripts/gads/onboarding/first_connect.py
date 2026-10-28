@@ -44,6 +44,7 @@ class FirstConnect:
     period: tuple[date, date]
     queries: list[QueryResult]
     features: list[dict]
+    period_note: str = ""   # how the period was chosen, when it was not given
 
     @property
     def failed(self) -> bool:
@@ -72,8 +73,8 @@ def check_query(name: str, customer_id: str, period: tuple[date, date], server_c
         result.status = "EMPTY"
         result.detail = "no rows returned: the response shape is valid but the required fields could not be checked"
         if start:
-            result.detail += (f" (no activity {start} to {end}; if the campaigns are paused, re-run with --end set to "
-                              "a day when they were running, e.g. --end 2026-06-30 --days 30)")
+            result.detail += (f" (no activity {start} to {end}; if the campaigns are paused, re-run without --end "
+                              "to use the last active day, or find it with scripts/last_active.py)")
         return result
     result.missing = sorted(QUERY_REQUIRED.get(name, frozenset()) - set(info["canonical_fields"]))
     if result.missing:

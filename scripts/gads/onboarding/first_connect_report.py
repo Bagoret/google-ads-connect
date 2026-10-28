@@ -18,6 +18,7 @@ def summary(fc: FirstConnect) -> dict:
     return {
         "customer_id": fc.customer_id,
         "period": [str(fc.period[0]), str(fc.period[1])],
+        "period_note": fc.period_note,
         "features": fc.features,
         "queries": [asdict(q) for q in fc.queries],
         "contains_account_values": False,
@@ -26,7 +27,8 @@ def summary(fc: FirstConnect) -> dict:
 
 def render_markdown(fc: FirstConnect, generated_at: str) -> str:
     L = [f"# First-connection check — customer {fc.customer_id}", "",
-         f"Generated {generated_at} · dated queries fetched for {fc.period[0]} to {fc.period[1]}.", "",
+         f"Generated {generated_at} · dated queries fetched for {fc.period[0]} to {fc.period[1]}."
+         + (f" {fc.period_note}" if fc.period_note else ""), "",
          "> Contains field names, row counts and statuses only (no campaign names, search terms, products or "
          "figures), so it is safe to share when asking for help.", "",
          "## Verdict", ""]
@@ -60,9 +62,9 @@ def render_markdown(fc: FirstConnect, generated_at: str) -> str:
         period = "a period when the campaigns were running" if quiet else "last week"
         L += [f"- In Claude Code, say **\"run onboarding\"**, then **\"weekly review for {period}\"**."]
     if quiet:
-        L.append("- Dated queries returned no rows for this period. If your campaigns are paused, check them on a "
-                 "period when they were running: `python3 scripts/first_connect.py --customer-id "
-                 f"{fc.customer_id} --end YYYY-MM-DD --days 30`.")
+        L.append("- Dated queries returned no rows for this period. If your campaigns are paused, find the last day "
+                 f"with impressions: `python3 scripts/last_active.py --customer-id {fc.customer_id}`, then re-run "
+                 f"`python3 scripts/first_connect.py --customer-id {fc.customer_id} --end <that day> --days 30`.")
     if any(q.unmapped for q in fc.queries):
         L.append("- Unmapped fields are returned by Google but not used yet (not an error); add them to "
                  "`config/field_map.json` only when a feature needs them.")

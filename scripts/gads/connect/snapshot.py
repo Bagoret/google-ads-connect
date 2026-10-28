@@ -11,7 +11,7 @@ from pathlib import Path
 from gads.connect.mcp_client import McpError, McpStdioClient, extract_payload
 from gads.connect.mcp_config import STRUCTURED_PARAMS, find_search_tool
 from gads.core.files import ROOT
-from gads.core.ids import parse_customer_id
+from gads.core.ids import require_customer_id
 from gads.core.logbook import StopAnalysis
 
 
@@ -85,10 +85,7 @@ def _json_default(obj):
 def run_snapshot(query: str, customer_id: str, start: date | None, end: date | None,
                  server_cmd: list[str], raw_dir: Path, env: dict | None = None,
                  queries_dir: Path = ROOT / "queries") -> Path:
-    parsed = parse_customer_id(customer_id)
-    if not parsed:
-        raise StopAnalysis(f"not a 10-digit Google Ads customer ID: {customer_id!r}")
-    customer_id = parsed
+    customer_id = require_customer_id(customer_id)
     gaql = render_query(queries_dir / f"{query}.gaql", start, end)
     fetched = datetime.now(timezone.utc)
     stamp = fetched.strftime("%Y%m%dT%H%M%S")

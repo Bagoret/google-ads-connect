@@ -3,6 +3,7 @@
 # as a custom connector. Run it in Google Cloud Shell (shell.cloud.google.com): gcloud and git are already there.
 #
 #   bash scripts/deploy_cloud_run.sh --project-id YOUR_PROJECT_ID [--region us-central1] [--dry-run]
+#   bash scripts/deploy_cloud_run.sh --project-id YOUR_PROJECT_ID --status   # read-only health check
 #
 # What it does (asks before each step that changes your project; re-running is safe):
 #   1. checks billing is enabled and turns on the APIs it needs (Cloud Run, Cloud Build, Artifact Registry,
@@ -11,8 +12,13 @@
 #   3. creates a Firestore database (keeps sign-ins across restarts) and a dedicated service account;
 #   4. stores the Web OAuth client secret and a generated signing key in Secret Manager (never on the command line);
 #   5. deploys the service (public address; Google sign-in is the gate) and checks it answers.
-# --dry-run prints every gcloud command instead of running it. Secrets are never printed. See docs/hosted-connector.md.
+# --dry-run prints every gcloud command instead of running it. --status changes nothing: it shows the deployed
+# revision, the client ID in use, when each secret was last replaced (never its value) and whether the server answers.
+# Secrets are never printed. See docs/hosted-connector.md.
 set -euo pipefail
+# gcloud must never wait on a question of its own: its output is often hidden here, so a prompt would look like a
+# hang. With prompts off it fails with a visible error instead; this script asks its own y/N questions.
+export CLOUDSDK_CORE_DISABLE_PROMPTS=1
 
 UPSTREAM="https://github.com/googleads/google-ads-mcp"
 TAG="v0.0.5"
@@ -23,6 +29,7 @@ PROJECT_ID=""
 REGION="us-central1"
 FIRESTORE_LOCATION="nam5"
 DRY_RUN=0
+STATUS=0
 APIS="run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com firestore.googleapis.com secretmanager.googleapis.com googleads.googleapis.com"
 
 while [ $# -gt 0 ]; do
@@ -31,7 +38,8 @@ while [ $# -gt 0 ]; do
     --region) [ $# -ge 2 ] || { echo "--region needs a value" >&2; exit 2; }; REGION="$2"; shift 2 ;;
     --firestore-location) [ $# -ge 2 ] || { echo "--firestore-location needs a value" >&2; exit 2; }; FIRESTORE_LOCATION="$2"; shift 2 ;;
     --dry-run) DRY_RUN=1; shift ;;
-    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    --status) STATUS=1; shift ;;
+    -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1 (try --help)" >&2; exit 2 ;;
   esac
 done
@@ -54,14 +62,71 @@ command -v git >/dev/null 2>&1 || stop "git not found."
 [[ "$PROJECT_ID" =~ ^[a-z][a-z0-9-]{4,28}[a-z0-9]$ ]] || stop "pass --project-id with your Google Cloud project ID."
 [[ "$REGION" =~ ^[a-z]+-[a-z]+[0-9]+$ ]] || stop "--region looks wrong: $REGION"
 
+ACCOUNT="$(gcloud config get-value account 2>/dev/null || true)"
+[ -n "$ACCOUNT" ] || stop "gcloud is not signed in. Run: gcloud auth login"
+PROJECT_NUMBER="$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)' 2>/dev/null || true)"
+[ -n "$PROJECT_NUMBER" ] || stop "cannot read project $PROJECT_ID (wrong ID, or this Google account has no access)."
+URL="https://${SERVICE}-${PROJECT_NUMBER}.${REGION}.run.app"
+
+server_answers() {  # the server's sign-in metadata is reachable
+  local code
+  code="$(curl -s -o /dev/null -w '%{http_code}' "$URL/.well-known/oauth-authorization-server" || true)"
+  if [ "$code" = "200" ]; then ok "server answers (sign-in metadata reachable)"; return 0; fi
+  echo "   ✕ sign-in metadata returned HTTP ${code:-none}; logs: gcloud run services logs read $SERVICE --region $REGION --project $PROJECT_ID"
+  return 1
+}
+
+status_report() {  # read-only: describes what is deployed; never prints a secret value
+  local json rc=0
+  echo "Status of $SERVICE in project $PROJECT_ID, region $REGION (read-only)."
+  if ! json="$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT_ID" --format=json 2>/dev/null)"; then
+    echo "   ✕ service: not deployed in $REGION (run this script without --status to deploy)"
+    return 1
+  fi
+  SERVICE_JSON="$json" python3 - <<'PY' || { echo "   ✕ could not read the service description"; rc=1; }
+import json, os
+s = json.loads(os.environ["SERVICE_JSON"])
+container = s["spec"]["template"]["spec"]["containers"][0]
+env = {e["name"]: e for e in container.get("env", [])}
+def show(name):
+    e = env.get(name)
+    if e is None:
+        return "NOT SET"
+    if "value" in e:
+        return e["value"]
+    ref = e.get("valueFrom", {}).get("secretKeyRef", {})
+    return "from Secret Manager %s:%s" % (ref.get("name"), ref.get("key"))
+st = s.get("status", {})
+ready = next((c for c in st.get("conditions", []) if c.get("type") == "Ready"), {})
+print("   service: %s (ready: %s)" % (st.get("url", "?"), ready.get("status", "?")))
+print("   revision: %s, deployed %s" % (st.get("latestReadyRevisionName", "?"), ready.get("lastTransitionTime", "?")))
+print("   image: %s" % container.get("image", "?"))
+for label, name in (("client ID", "GOOGLE_ADS_MCP_OAUTH_CLIENT_ID"), ("client secret", "GOOGLE_ADS_MCP_OAUTH_CLIENT_SECRET"),
+                    ("base URL", "GOOGLE_ADS_MCP_BASE_URL"), ("sign-in storage", "GOOGLE_ADS_MCP_STORAGE_TYPE")):
+    print("   %s: %s" % (label, show(name)))
+PY
+  local secret when
+  for secret in google-ads-mcp-client-secret google-ads-mcp-jwt-key; do
+    when="$(gcloud secrets versions list "$secret" --project "$PROJECT_ID" --filter='state=ENABLED' \
+            --sort-by='~createTime' --limit=1 --format='value(name,createTime)' 2>/dev/null || true)"
+    if [ -n "$when" ]; then echo "   secret $secret: latest enabled version $when (value not shown)"
+    else echo "   ✕ secret $secret: missing or no enabled version"; rc=1; fi
+  done
+  echo "   The server reads its secrets when it starts: after replacing one, redeploy (re-run without --status)."
+  server_answers || rc=1
+  echo "   Connector address: $URL/mcp"
+  echo "   Check in the console: the Web client with this ID exists and lists $URL/auth/callback and"
+  echo "   https://claude.ai/api/mcp/auth_callback; your Google account is a test user (Audience)."
+  return $rc
+}
+if [ "$STATUS" = 1 ]; then
+  if status_report; then exit 0; else exit 1; fi
+fi
+
 echo "Google Ads MCP server -> Cloud Run (read-only). Project $PROJECT_ID, region $REGION.$([ "$DRY_RUN" = 1 ] && echo ' DRY RUN.')"
 
 step "1/6 Project, billing and APIs"
-ACCOUNT="$(gcloud config get-value account 2>/dev/null || true)"
-[ -n "$ACCOUNT" ] || stop "gcloud is not signed in. Run: gcloud auth login"
 ok "signed in to gcloud"
-PROJECT_NUMBER="$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)' 2>/dev/null || true)"
-[ -n "$PROJECT_NUMBER" ] || stop "cannot read project $PROJECT_ID (wrong ID, or this Google account has no access)."
 BILLING="$(gcloud billing projects describe "$PROJECT_ID" --format='value(billingEnabled)' 2>/dev/null || true)"
 if [ "$BILLING" != "True" ] && [ "$BILLING" != "true" ]; then
   stop "billing is not enabled for $PROJECT_ID. Console: Billing -> link a billing account, and set a budget alert (Billing -> Budgets & alerts, e.g. 1 EUR). Then re-run."
@@ -74,7 +139,6 @@ else
   stop "the APIs are required."
 fi
 
-URL="https://${SERVICE}-${PROJECT_NUMBER}.${REGION}.run.app"
 CALLBACK="${URL}/auth/callback"
 IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${SERVICE}:${TAG#v}"
 SA="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
@@ -93,8 +157,15 @@ CLIENT_ID=""
 for _ in 1 2 3; do
   printf '   Web client ID (ends with .apps.googleusercontent.com): '
   read -r CLIENT_ID || CLIENT_ID=""
-  [[ "$CLIENT_ID" =~ ^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$ ]] && break
-  echo "   That does not look like a client ID."
+  if [[ "$CLIENT_ID" =~ ^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$ ]]; then
+    # Client IDs begin with the number of the project they were created in: catches a clipped paste or a
+    # client from another project (Google then answers "The OAuth client was not found").
+    [ "${CLIENT_ID%%-*}" = "$PROJECT_NUMBER" ] && break
+    echo "   That client ID does not start with this project's number ($PROJECT_NUMBER-): check for a missing"
+    echo "   first character, or a client created in another project."
+  else
+    echo "   That does not look like a client ID."
+  fi
   CLIENT_ID=""
 done
 [ -n "$CLIENT_ID" ] || stop "no valid Web client ID entered."
@@ -175,9 +246,7 @@ if [ "$DRY_RUN" = 0 ]; then
   if [ -n "$ACTUAL" ] && [ "$ACTUAL" != "$URL" ]; then
     echo "   Note: Cloud Run reports $ACTUAL; both addresses reach the same service. The server uses $URL."
   fi
-  CODE="$(curl -s -o /dev/null -w '%{http_code}' "$URL/.well-known/oauth-authorization-server" || true)"
-  [ "$CODE" = "200" ] && ok "server answers (sign-in metadata reachable)" || \
-    echo "   Warning: sign-in metadata returned HTTP $CODE; check: gcloud run services logs read $SERVICE --region $REGION --project $PROJECT_ID"
+  server_answers || true
 fi
 
 cat <<EOF

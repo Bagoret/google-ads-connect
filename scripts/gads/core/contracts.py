@@ -3,6 +3,7 @@ need. One source of truth for the reviews and for the first-connection check."""
 from __future__ import annotations
 
 QUERY_REQUIRED: dict[str, frozenset[str]] = {
+    "account_activity": frozenset({"date", "impressions"}),
     "customer_settings": frozenset({"customer_id", "currency", "time_zone"}),
     "campaign_inventory": frozenset({"campaign_id", "campaign_status", "channel_type"}),
     "conversion_actions": frozenset({"conversion_action_id", "conversion_action_status"}),
