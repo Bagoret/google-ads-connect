@@ -153,8 +153,15 @@ CLIENT_ID=""
 for _ in 1 2 3; do
   printf '   Web client ID (ends with .apps.googleusercontent.com): '
   read -r CLIENT_ID || CLIENT_ID=""
-  [[ "$CLIENT_ID" =~ ^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$ ]] && break
-  echo "   That does not look like a client ID."
+  if [[ "$CLIENT_ID" =~ ^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$ ]]; then
+    # Client IDs begin with the number of the project they were created in: catches a clipped paste or a
+    # client from another project (Google then answers "The OAuth client was not found").
+    [ "${CLIENT_ID%%-*}" = "$PROJECT_NUMBER" ] && break
+    echo "   That client ID does not start with this project's number ($PROJECT_NUMBER-): check for a missing"
+    echo "   first character, or a client created in another project."
+  else
+    echo "   That does not look like a client ID."
+  fi
   CLIENT_ID=""
 done
 [ -n "$CLIENT_ID" ] || stop "no valid Web client ID entered."

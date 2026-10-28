@@ -118,6 +118,13 @@ class DeployScriptTest(unittest.TestCase):
         self.assertEqual(r.returncode, 2)
         self.assertFalse([c for c in calls if "builds submit" in c or c.startswith("run deploy")])
 
+    def test_client_id_from_another_project_or_clipped_is_rejected(self):
+        clipped = CLIENT_ID[1:]  # first digit lost when pasting
+        r, calls = self.run_script(["y", clipped, "999-abc.apps.googleusercontent.com", clipped])
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("does not start with this project's number (123456789012-)", r.stdout)
+        self.assertFalse([c for c in calls if "builds submit" in c or c.startswith("run deploy")])
+
     def test_declining_deploy_deploys_nothing(self):
         r, calls = self.run_script(self.FULL[:-1] + ["n"])
         self.assertEqual(r.returncode, 2)
