@@ -41,6 +41,12 @@ def check_date_coverage(records: list[dict], start: date, end: date, log: RunLog
     return missing
 
 
+# Google Ads conversion windows are at most 90 days (support.google.com/google-ads/answer/3123169): a period that
+# ended longer ago than that can no longer gain conversions, whatever the account's settings.
+MAX_CONVERSION_WINDOW_DAYS = 90
+CONVERSION_DELAY = "conversion delay"  # every delay caveat contains this phrase (the dashboard looks for it)
+
+
 def partial_data_caveats(end: date, account_tz: str, lag_days: int | None, now_utc: datetime) -> list[str]:
     try:
         today = now_utc.astimezone(ZoneInfo(account_tz)).date()
@@ -50,11 +56,14 @@ def partial_data_caveats(end: date, account_tz: str, lag_days: int | None, now_u
     if end >= today:
         caveats.append(f"period end {end} is today or later in the account timezone ({account_tz}): "
                        "that day's data is partial")
+    age = (today - end).days
+    if age > MAX_CONVERSION_WINDOW_DAYS:
+        return caveats
     if lag_days is None:
-        caveats.append("conversion delay unknown (context/measurement.md): recent conversions and "
-                       "conversion value may still increase")
+        caveats.append(f"{CONVERSION_DELAY} unknown (context/measurement.md): the period ended {max(age, 0)} day(s) "
+                       f"ago, within Google's maximum {MAX_CONVERSION_WINDOW_DAYS}-day conversion window, so "
+                       "conversions and conversion value may still increase")
     else:
-        age = (today - end).days
         if age < lag_days:
             caveats.append(f"period ended {max(age, 0)} day(s) ago, within the {lag_days}-day conversion delay: "
                            "conversions and conversion value are likely understated")

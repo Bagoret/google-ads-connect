@@ -9,6 +9,7 @@ from html import escape
 from gads.weekly.analysis import Review
 from gads.core.compare import pct_change
 from gads.core.metrics import Totals, derive, fmt
+from gads.core.validate import CONVERSION_DELAY
 from gads.ui.viz import bar_chart, caveats_card, page, source_note
 
 ZERO = Decimal(0)
@@ -261,12 +262,14 @@ def render_dashboard(review: Review, generated_at: datetime, ai_html: str = "", 
     comparability = ("" if not ctx.previous or ctx.equivalent else
                      f'<div class="banner">Periods are not comparable ({escape("; ".join(data.equivalence_reasons))}). '
                      "Deltas are hidden.</div>")
+    delay = [c for c in ctx.caveats if CONVERSION_DELAY in c]
+    delay_note = (f'<p class="muted small">May still gain conversions: {escape(delay[0])}.</p>' if delay else "")
     body = f"""{comparability}
 {kpi_row(ctx)}
 <div class="grid2">
 <section class="card"><h2>Daily cost</h2>{line_chart("chart-cost", daily, "cost", cur)}{daily_table(daily, cur)}</section>
 <section class="card"><h2>Daily conversion value</h2>{line_chart("chart-value", daily, "conversion_value", cur)}
-<p class="muted small">Recent days may still gain conversions (conversion delay).</p></section>
+{delay_note}</section>
 </div>
 <div class="grid2">
 <section class="card"><h2>Cost by campaign type (current period)</h2>{bar_chart(_current_costs(data.by_type), cur, 'Current-period cost by campaign type')}{segment_table(data.by_type, cur)}</section>

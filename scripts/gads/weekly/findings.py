@@ -114,13 +114,22 @@ def _material_changes(ctx: ReviewContext, totals: dict[str, Totals]) -> list[str
     if cost_change is not None and abs(cost_change) >= limit:
         changes.append(f"cost {cost_change:+.1f}%")
     min_clicks = ctx.thresholds["min_clicks_for_ratio"]
-    if cur.clicks >= min_clicks and prev.clicks >= min_clicks:
+    if cur.clicks >= min_clicks and prev.clicks >= min_clicks and _enough_conversions(ctx, cur, prev):
         dc, dp = derive(cur), derive(prev)
         for m in RATIO_METRICS:
             change = pct_change(dc[m], dp[m])
             if change is not None and abs(change) >= limit:
                 changes.append(f"{m.upper()} {change:+.1f}%")
     return changes
+
+
+def _enough_conversions(ctx: ReviewContext, cur: Totals, prev: Totals) -> bool:
+    """CPA, ROAS and conversion rate all divide by or into conversions: with a handful of conversions a single one
+    moves them by tens of percent, so they are compared only when both periods reach the configured minimum."""
+    limit = ctx.thresholds.get("min_conversions_for_ratio")
+    if limit is None:
+        return True
+    return all(t.conversions is not None and t.conversions >= Decimal(str(limit)) for t in (cur, prev))
 
 
 def _comparison_volume(totals: dict[str, Totals]) -> int:

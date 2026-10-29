@@ -68,6 +68,25 @@ class RulesTest(unittest.TestCase):
         acts = generate_actions(ctx(prev=T(clicks=10, conv="1", value="100"), cur=T(clicks=10, conv="1", value="10")))
         self.assertFalse([a for a in acts if "roas" in a.finding.lower()])
 
+    def test_ratio_change_needs_min_conversions(self):
+        # 1 -> 3 conversions on plenty of clicks: CPA/ROAS/CVR swing by hundreds of percent on noise
+        few = dict(prev=T(clicks=300, conv="1", value="1"), cur=T(clicks=300, conv="3", value="14"))
+        acts = generate_actions(ctx(**few, thresholds={"min_conversions_for_ratio": 10}))
+        self.assertFalse([a for a in acts if any(m in a.finding for m in ("CPA", "ROAS", "CVR"))])
+        enough = dict(prev=T(clicks=300, conv="10", value="100"), cur=T(clicks=300, conv="30", value="1400"))
+        acts = generate_actions(ctx(**enough, thresholds={"min_conversions_for_ratio": 10}))
+        self.assertTrue([a for a in acts if "ROAS" in a.finding])
+
+    def test_min_conversions_null_disables_the_guard(self):
+        acts = generate_actions(ctx(prev=T(clicks=300, conv="1", value="1"), cur=T(clicks=300, conv="3", value="14"),
+                                    thresholds={"min_conversions_for_ratio": None}))
+        self.assertTrue([a for a in acts if "ROAS" in a.finding])
+
+    def test_cost_change_reported_even_with_few_conversions(self):
+        acts = generate_actions(ctx(prev=T(cost="100", conv="1"), cur=T(cost="300", conv="1"),
+                                    thresholds={"min_conversions_for_ratio": 10}))
+        self.assertTrue([a for a in acts if "cost +200.0%" in a.finding])
+
     def test_r2_disabled_when_threshold_null(self):
         self.assertEqual(generate_actions(ctx(thresholds={"min_spend_zero_conv": None}, cur=T(cost="500", conv="0"))), [])
 

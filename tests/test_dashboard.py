@@ -1,5 +1,6 @@
 import json
 import re
+import shutil
 import sys
 import tempfile
 import unittest
@@ -28,6 +29,15 @@ class DashboardTest(unittest.TestCase):
         self.assertEqual(code, 0)
         page = next(self.out.glob("*/index.html"))
         return page.read_text(encoding="utf-8")
+
+    def test_delay_note_only_while_conversions_can_still_arrive(self):
+        self.assertIn("May still gain conversions", self.build())  # 6 days old, delay unknown
+        for old in self.out.glob("*"):
+            shutil.rmtree(old)
+        code = main(["--snapshot", str(SNAP), "--current", "2026-10-13:2026-10-19", "--expected-currency", "EUR",
+                     "--now", "2027-03-01T09:00:00+00:00", "--out", str(self.out)])
+        self.assertEqual(code, 0)
+        self.assertNotIn("May still gain conversions", next(self.out.glob("*/index.html")).read_text(encoding="utf-8"))
 
     def test_page_is_self_contained(self):
         html = self.build("--previous", "2026-10-06:2026-10-12")
