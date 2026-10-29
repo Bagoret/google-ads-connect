@@ -38,6 +38,10 @@ Note every `UNKNOWN` field that limits interpretation.
    the last day with impressions). State that the review covers that period, not last week.
 1. **Fetch** (only if no snapshot covering both periods exists):
    `python3 scripts/snapshot.py --query campaign_daily --customer-id <ID> --start <prev start> --end <current end>`
+   For the measurement check and impression share, also fetch (current period only, exact dates):
+   `python3 scripts/snapshot.py --query conversions_by_action --customer-id <ID> --start <current start> --end <current end>`
+   `python3 scripts/snapshot.py --query campaign_share --customer-id <ID> --start <current start> --end <current end>`
+   `python3 scripts/snapshot.py --query conversion_actions --customer-id <ID>`
 2. **Inspect and document grain:** `python3 scripts/inspect_snapshot.py <snapshot>`.
    Confirm grain `campaign_id × date`, row count, date range, currency, unmapped fields.
 3. **Validate** — the review script stops (exit 2) on: unknown response shape, pagination,
@@ -49,13 +53,17 @@ Note every `UNKNOWN` field that limits interpretation.
    ```
    python3 scripts/weekly_review.py --snapshot <file> --current <A:B> --previous <A:B> \
      --expected-currency <from context> [--conversion-lag-days <from context>] \
+     [--conversions-snapshot <file> --conversion-settings-snapshot <file>] [--share-snapshot <file>] \
      [--target-roas <from context>] [--target-cpa <from context>]
    ```
    Pass optional flags **only** with values recorded (not UNKNOWN) in `context/`.
 6. **Comparison validity:** non-equivalent periods (length, weekday mix, overlap) → deltas are
    suppressed automatically. Say so; do not compare them in prose.
-7. **Metrics:** spend, impressions, clicks, conversions, conversion value, CPC, CTR, CVR, CPA, ROAS.
-   Undefined ratios show `N/A`, never 0.
+7. **Metrics:** spend, impressions, clicks, conversions, conversion value, CPC, CTR, CVR, CPA, ROAS,
+   all conversions (includes secondary actions; never mix it into CPA/ROAS). Impression share comes from
+   the share snapshot only; values Google caps are shown as "< 10%" / "> 90%". Undefined ratios show `N/A`, never 0.
+   **Measurement check first:** if it flags a secondary or page-view action counted in Conversions, say so at
+   the top of your summary and treat CPA, ROAS and conversion findings as unreliable for that period.
 8. **Segments:** campaign type and brand category. If everything is `unclassified`, recommend
    filling `config/campaign_classification.json` (from `context/account-map.md`).
 9. **Measurement caveats:** conversion delay, partial days (account timezone), maturity gap between
@@ -95,7 +103,8 @@ engine, so its numbers match the report. Point the user to the file; do not past
 ## Output schema
 `outputs/weekly-review_<customer>_<start>_<end>/`:
 - `report.md` — sections: Sources & grain · Validation log · Comparison validity · Account totals ·
-  By campaign type · By brand category · By campaign · Observed material changes · Measurement caveats ·
+  By campaign type · By brand category · By campaign · Measurement check · [Impression share] ·
+  Observed material changes · Measurement caveats ·
   Prioritised actions · Thresholds used · What this report cannot tell you.
 - `actions.json` / `actions.md` — columns: `priority, entity_type, entity_id, finding,
   supporting_metrics, proposed_action, rationale, confidence, risk, approval_required, validation_plan`.

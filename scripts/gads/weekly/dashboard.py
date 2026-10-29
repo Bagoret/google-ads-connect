@@ -10,6 +10,7 @@ from gads.weekly.analysis import Review
 from gads.core.compare import pct_change
 from gads.core.metrics import Totals, derive, fmt
 from gads.core.validate import CONVERSION_DELAY
+from gads.weekly.share import SHARE_FIELDS, fmt_share
 from gads.ui.viz import bar_chart, caveats_card, page, source_note
 
 ZERO = Decimal(0)
@@ -22,13 +23,18 @@ KPIS = [
     ("ROAS", "roas", "ratio", 1),
     ("CPA", "cpa", "money", -1),
     ("Conversion rate", "cvr", "pct", 1),
+    ("CTR", "ctr", "pct", 1),
+    ("Avg. CPC", "cpc", "money", -1),
+    ("All conversions", "all_conversions", "conv", 0),
 ]
 PRIORITY = {"P1": ("critical", "■", "Priority 1"), "P2": ("serious", "▲", "Priority 2"),
             "P3": ("warning", "●", "Priority 3")}
 
 
 def _value(t: Totals, key: str):
-    return getattr(t, key) if key in ("cost", "conversions", "conversion_value", "clicks") else derive(t)[key]
+    if key in ("cost", "conversions", "conversion_value", "clicks", "all_conversions"):
+        return getattr(t, key)
+    return derive(t)[key]
 
 
 def _days(start: date, end: date) -> list[date]:
@@ -206,13 +212,57 @@ def campaign_table(review: Review, sparks: dict[str, list[Decimal]], daily: list
             f'<td>{escape(meta.get("brand_category", ""))}</td>'
             f'<td class="num">{escape(fmt(t.cost, "money", ctx.currency))}</td><td>{delta}</td>'
             f'<td>{sparkline(sparks.get(cid, []), cur_idx)}</td>'
-            f'<td class="num">{fmt(t.clicks, "count")}</td><td class="num">{fmt(t.conversions, "conv")}</td>'
+            f'<td class="num">{fmt(t.clicks, "count")}</td><td class="num">{fmt(d["ctr"], "pct")}</td>'
+            f'<td class="num">{escape(fmt(d["cpc"], "money", ctx.currency))}</td>'
+            f'<td class="num">{fmt(t.conversions, "conv")}</td>'
             f'<td class="num">{escape(fmt(d["cpa"], "money", ctx.currency))}</td>'
             f'<td class="num">{fmt(d["roas"], "ratio")}</td></tr>')
     return ('<div class="table-wrap"><table><thead><tr><th>ID</th><th>Campaign</th><th>Type</th><th>Brand</th>'
             '<th class="num">Cost</th><th>Δ cost</th><th>Daily cost</th><th class="num">Clicks</th>'
-            '<th class="num">Conv.</th><th class="num">CPA</th><th class="num">ROAS</th></tr></thead><tbody>'
+            '<th class="num">CTR</th><th class="num">CPC</th><th class="num">Conv.</th><th class="num">CPA</th><th class="num">ROAS</th></tr></thead><tbody>'
             + "".join(rows) + "</tbody></table></div>")
+
+
+def measurement_card(review: Review) -> str:
+    """Which conversion actions make up Conversions (current period); empty without the conversions snapshot."""
+    m, ctx = review.data.measurement, review.ctx
+    if m is None:
+        return ""
+    setting = {True: "yes", False: '<span class="badge warning">secondary</span>', None: "–"}
+    rows = "".join(
+        f'<tr><td class="name">{escape(a.name)}</td><td class="mono">{escape(a.action_id)}</td>'
+        f'<td>{escape(a.category)}</td><td>{setting[a.counted_by_setting]}</td>'
+        f'<td class="num">{fmt(a.conversions, "conv")}</td>'
+        f'<td class="num">{escape(fmt(a.conversion_value, "money", ctx.currency))}</td>'
+        f'<td class="num">{fmt(a.all_conversions, "conv")}</td></tr>' for a in m.rows)
+    check = {True: "They add up to the campaign data's conversions for this period.",
+             False: f"They do not add up to the campaign data's conversions ({fmt(m.account_total, 'conv')}); see caveats.",
+             None: ""}[m.reconciles]
+    return ('<section class="card"><h2>Measurement check: what counts as a conversion</h2>'
+            f'<p class="muted small">Current period, by conversion action ({escape(m.source)}). "Conversions" feeds CPA, '
+            'ROAS and Smart Bidding; "All conversions" also includes secondary actions. ' + check + '</p>'
+            '<div class="table-wrap"><table><thead><tr><th>Action</th><th>ID</th><th>Category</th>'
+            '<th>Counted (setting)</th><th class="num">Conv.</th><th class="num">Conv. value</th>'
+            f'<th class="num">All conv.</th></tr></thead><tbody>{rows}</tbody></table></div></section>')
+
+
+def share_card(review: Review) -> str:
+    """Impression share per campaign (current period); empty without the share snapshot."""
+    shares, ctx = review.data.shares, review.ctx
+    if shares is None:
+        return ""
+    head = "".join(f'<th class="num" title="{escape(meaning)}">{escape(label)}</th>' for _, label, meaning in SHARE_FIELDS)
+    rows = "".join(
+        f'<tr><td class="name">{escape(ctx.campaign_meta.get(cid, {}).get("name", ""))}</td>'
+        f'<td class="mono">{escape(cid)}</td>'
+        + "".join(f'<td class="num">{escape(fmt_share(values.get(f)))}</td>' for f, _, _ in SHARE_FIELDS) + "</tr>"
+        for cid, values in sorted(shares.items(), key=lambda kv: -(kv[1].get("impression_share") or 0)))
+    legend = " · ".join(f"{label}: {meaning}" for _, label, meaning in SHARE_FIELDS)
+    return ('<section class="card"><h2>Impression share (current period, search)</h2>'
+            f'<div class="table-wrap"><table><thead><tr><th>Campaign</th><th>ID</th>{head}</tr></thead>'
+            f'<tbody>{rows or "<tr><td colspan=7>No campaign had impressions.</td></tr>"}</tbody></table></div>'
+            f'<p class="muted small">{escape(legend)}. Google reports values below 10% as "&lt; 10%" and lost shares '
+            'above 90% as "&gt; 90%".</p></section>')
 
 
 def issues(actions) -> str:
@@ -279,8 +329,10 @@ def render_dashboard(review: Review, generated_at: datetime, ai_html: str = "", 
 <section class="card"><h2>Issues to review</h2>
 <p class="muted small">Rule-based findings. Each is a proposal; nothing changes in the account without your approval.</p>
 {issues(review.actions)}</section>
+{measurement_card(review)}
 {ai_html}
 <section class="card"><h2>Campaigns</h2>{campaign_table(review, sparks, daily)}</section>
+{share_card(review)}
 {caveats_card(ctx.caveats + log.warnings)}"""
     footer = (f"{source_note(snap)} · grain {escape(' × '.join(data.grain))} ·\n"
               f"{data.rows} rows · {len(log.excluded)} excluded · generated {escape(generated_at.isoformat(timespec='seconds'))} ·\n"

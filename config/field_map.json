@@ -57,5 +57,17 @@
   "metrics.clicks": {"name": "clicks", "type": "int"},
   "metrics.cost_micros": {"name": "cost", "type": "micros"},
   "metrics.conversions": {"name": "conversions", "type": "decimal"},
-  "metrics.conversions_value": {"name": "conversion_value", "type": "decimal"}
+  "metrics.conversions_value": {"name": "conversion_value", "type": "decimal"},
+  "metrics.all_conversions": {"name": "all_conversions", "type": "decimal"},
+  "metrics.all_conversions_value": {"name": "all_conversion_value", "type": "decimal"},
+
+  "metrics.search_impression_share": {"name": "impression_share", "type": "decimal"},
+  "metrics.search_budget_lost_impression_share": {"name": "budget_lost_impression_share", "type": "decimal"},
+  "metrics.search_rank_lost_impression_share": {"name": "rank_lost_impression_share", "type": "decimal"},
+  "metrics.search_top_impression_share": {"name": "top_impression_share", "type": "decimal"},
+  "metrics.search_absolute_top_impression_share": {"name": "absolute_top_impression_share", "type": "decimal"},
+
+  "segments.conversion_action": {"name": "conversion_action_resource", "type": "str"},
+  "segments.conversion_action_name": {"name": "conversion_action_name", "type": "str"},
+  "segments.conversion_action_category": {"name": "conversion_category", "type": "str"}
 }

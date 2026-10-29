@@ -16,12 +16,20 @@ class Totals:
     conversions: Decimal | None
     conversion_value: Decimal | None
     rows: int
+    # Every conversion action, including secondary ones (page views, add to cart ...); None if not fetched.
+    all_conversions: Decimal | None = None
+    all_conversion_value: Decimal | None = None
 
 
 def aggregate(records: Iterable[dict]) -> Totals:
     records = list(records)
     has_conv = bool(records) and all(r.get("conversions") is not None for r in records)
     has_value = bool(records) and all(r.get("conversion_value") is not None for r in records)
+
+    def total_if_present(key: str) -> Decimal | None:
+        if not records or any(r.get(key) is None for r in records):
+            return None
+        return sum((r[key] for r in records), ZERO)
     return Totals(
         cost=sum((r.get("cost") or ZERO for r in records), ZERO),
         clicks=sum(r.get("clicks") or 0 for r in records),
@@ -29,6 +37,8 @@ def aggregate(records: Iterable[dict]) -> Totals:
         conversions=sum((r["conversions"] for r in records), ZERO) if has_conv else None,
         conversion_value=sum((r["conversion_value"] for r in records), ZERO) if has_value else None,
         rows=len(records),
+        all_conversions=total_if_present("all_conversions"),
+        all_conversion_value=total_if_present("all_conversion_value"),
     )
 
 

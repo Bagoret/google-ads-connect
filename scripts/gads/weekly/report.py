@@ -10,6 +10,7 @@ from gads.weekly.findings import ACTION_COLUMNS, Action, ReviewContext
 from gads.core.logbook import RunLog
 from gads.core.metrics import Totals, derive, fmt
 from gads.core.files import unique_dir
+from gads.weekly.share import SHARE_FIELDS, fmt_share
 
 CANNOT_TELL = [
     "Why a metric changed. Changes are observed; causes need change history, auction data, site and stock checks.",
@@ -29,7 +30,8 @@ def _metric_row(label: str, t: Totals, cur: str) -> str:
     d = derive(t)
     return (f"| {label} | {fmt(t.cost, 'money', cur)} | {fmt(t.impressions, 'count')} | {fmt(t.clicks, 'count')} | "
             f"{fmt(t.conversions, 'conv')} | {fmt(t.conversion_value, 'money', cur)} | {fmt(d['cpc'], 'money', cur)} | "
-            f"{fmt(d['ctr'], 'pct')} | {fmt(d['cvr'], 'pct')} | {fmt(d['cpa'], 'money', cur)} | {fmt(d['roas'], 'ratio')} |")
+            f"{fmt(d['ctr'], 'pct')} | {fmt(d['cvr'], 'pct')} | {fmt(d['cpa'], 'money', cur)} | {fmt(d['roas'], 'ratio')} | "
+            f"{fmt(t.all_conversions, 'conv')} |")
 
 
 def _delta_row(cur: Totals, prev: Totals) -> str:
@@ -38,11 +40,11 @@ def _delta_row(cur: Totals, prev: Totals) -> str:
             f"{_delta(cur.clicks, prev.clicks)} | {_delta(cur.conversions, prev.conversions)} | "
             f"{_delta(cur.conversion_value, prev.conversion_value)} | {_delta(dc['cpc'], dp['cpc'])} | "
             f"{_delta(dc['ctr'], dp['ctr'])} | {_delta(dc['cvr'], dp['cvr'])} | {_delta(dc['cpa'], dp['cpa'])} | "
-            f"{_delta(dc['roas'], dp['roas'])} |")
+            f"{_delta(dc['roas'], dp['roas'])} | {_delta(cur.all_conversions, prev.all_conversions)} |")
 
 
-HEADER = ("| Period | Cost | Impr. | Clicks | Conv. | Conv. value | CPC | CTR | CVR | CPA | ROAS |\n"
-          "|---|---|---|---|---|---|---|---|---|---|---|")
+HEADER = ("| Period | Cost | Impr. | Clicks | Conv. | Conv. value | CPC | CTR | CVR | CPA | ROAS | All conv. |\n"
+          "|---|---|---|---|---|---|---|---|---|---|---|---|")
 
 
 def _period_table(ctx: ReviewContext, totals: dict[str, Totals]) -> list[str]:
@@ -59,6 +61,41 @@ def _segment_section(ctx: ReviewContext, groups: dict[str, dict[str, Totals]]) -
     for name in sorted(groups):
         lines += [f"**{name}**", "", *_period_table(ctx, groups[name]), ""]
     return lines
+
+
+def _measurement_section(ctx: ReviewContext, data: ReportData) -> list[str]:
+    m = data.measurement
+    if m is None:
+        return ["## Measurement check", "", "- Not run (no `--conversions-snapshot`): this report cannot tell which "
+                "conversion actions make up Conversions.", ""]
+    L = ["## Measurement check", "",
+         f"**Observed** (`{m.source}`" + (f", settings `{m.settings_source}`" if m.settings_source else "")
+         + f", {ctx.current}): which conversion actions make up Conversions. CPA, ROAS and Smart Bidding use "
+         "Conversions; All conversions also includes secondary actions.", "",
+         "| Action | ID | Category | Counted (setting) | Conv. | Conv. value | All conv. |", "|---|---|---|---|---|---|---|"]
+    setting = {True: "yes", False: "**secondary**", None: "–"}
+    for a in m.rows:
+        L.append(f"| {a.name} | {a.action_id} | {a.category} | {setting[a.counted_by_setting]} | "
+                 f"{fmt(a.conversions, 'conv')} | {fmt(a.conversion_value, 'money', ctx.currency)} | "
+                 f"{fmt(a.all_conversions, 'conv')} |")
+    if m.reconciles is not None:
+        L += ["", "- Total by action " + ("matches" if m.reconciles else "**does not match**")
+              + f" the campaign data's conversions ({fmt(m.total, 'conv')} vs {fmt(m.account_total, 'conv')})."]
+    return L + [""]
+
+
+def _share_section(ctx: ReviewContext, data: ReportData) -> list[str]:
+    if data.shares is None:
+        return []
+    L = ["## Impression share (search, current period)", "",
+         "| Campaign ID | Name | " + " | ".join(label for _, label, _ in SHARE_FIELDS) + " |",
+         "|---|---|" + "---|" * len(SHARE_FIELDS)]
+    for cid, values in sorted(data.shares.items(), key=lambda kv: -(kv[1].get("impression_share") or 0)):
+        L.append(f"| {cid} | {ctx.campaign_meta.get(cid, {}).get('name', '')} | "
+                 + " | ".join(fmt_share(values.get(f)) for f, _, _ in SHARE_FIELDS) + " |")
+    L += ["", "- " + "; ".join(f"{label}: {meaning}" for _, label, meaning in SHARE_FIELDS) + ".",
+          "- Google reports shares below 10% as \"< 10%\" and lost shares above 90% as \"> 90%\" (no exact value).", ""]
+    return L
 
 
 def render_report(ctx: ReviewContext, actions: list[Action], log: RunLog, data: ReportData) -> str:
@@ -104,8 +141,8 @@ def render_report(ctx: ReviewContext, actions: list[Action], log: RunLog, data: 
           *_segment_section(ctx, data.by_brand)]
 
     L += ["## By campaign", "",
-          "| Campaign ID | Name (latest) | Type | Brand | Cost | Clicks | Conv. | CPA | ROAS | Δ cost |",
-          "|---|---|---|---|---|---|---|---|---|---|"]
+          "| Campaign ID | Name (latest) | Type | Brand | Cost | Clicks | CTR | CPC | Conv. | CPA | ROAS | Δ cost |",
+          "|---|---|---|---|---|---|---|---|---|---|---|---|"]
     ordered = sorted(ctx.campaigns.items(), key=lambda kv: -kv[1]["current"].cost)
     for cid, totals in ordered:
         meta, t = ctx.campaign_meta.get(cid, {}), totals["current"]
@@ -113,8 +150,10 @@ def render_report(ctx: ReviewContext, actions: list[Action], log: RunLog, data: 
         delta = _delta(t.cost, totals["previous"].cost) if ctx.equivalent and "previous" in totals else "N/A"
         L.append(f"| {cid} | {meta.get('name', '')} | {meta.get('campaign_type', '')} | "
                  f"{meta.get('brand_category', '')} | {fmt(t.cost, 'money', cur)} | {fmt(t.clicks, 'count')} | "
-                 f"{fmt(t.conversions, 'conv')} | {fmt(d['cpa'], 'money', cur)} | {fmt(d['roas'], 'ratio')} | {delta} |")
+                 f"{fmt(d['ctr'], 'pct')} | {fmt(d['cpc'], 'money', cur)} | {fmt(t.conversions, 'conv')} | {fmt(d['cpa'], 'money', cur)} | {fmt(d['roas'], 'ratio')} | {delta} |")
     L.append("")
+
+    L += _measurement_section(ctx, data) + _share_section(ctx, data)
 
     L += ["## Observed material changes", ""]
     observed = [a for a in actions if a.finding.startswith(("Material change", "Conversions fell"))]

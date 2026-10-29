@@ -19,7 +19,7 @@ from gads.core.normalize import load_field_map
 # feature -> (queries it needs, optional queries). Order is the order of the report.
 FEATURES: list[tuple[str, list[str], list[str]]] = [
     ("Onboarding (account facts)", ["customer_settings", "campaign_inventory", "conversion_actions"], []),
-    ("Weekly review and dashboard", ["campaign_daily"], []),
+    ("Weekly review and dashboard", ["campaign_daily"], ["conversions_by_action", "campaign_share"]),
     ("Search-term review", ["search_terms", "keywords", "negative_keywords"],
      ["shared_negative_keywords", "campaign_shared_sets"]),
     ("Product review", ["product_daily"], []),
