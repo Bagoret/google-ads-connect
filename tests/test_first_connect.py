@@ -32,6 +32,10 @@ def value_for(field: str):
         return "10"
     if field in ("metrics.conversions", "metrics.conversions_value"):
         return 1.5
+    if field == "segments.conversion_action":
+        return "customers/9000000001/conversionActions/9000000002"
+    if field.startswith("metrics."):  # other metrics (shares, all conversions) are plain numbers
+        return 0.5
     if field == "customer.currency_code":
         return "EUR"
     if field == "customer.time_zone":

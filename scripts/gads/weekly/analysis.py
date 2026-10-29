@@ -9,6 +9,8 @@ from pathlib import Path
 
 from gads.core.thresholds import load_thresholds
 from gads.weekly.findings import ReviewContext, generate_actions
+from gads.weekly.measurement import Measurement, build_measurement, measurement_actions
+from gads.weekly.share import load_shares
 from gads.core.cli import add_common_args, load_json_file
 from gads.core.compare import Period, equivalence
 from gads.core.contracts import QUERY_REQUIRED
@@ -29,6 +31,12 @@ def add_weekly_args(ap: argparse.ArgumentParser) -> argparse.ArgumentParser:
     ap.add_argument("--previous", help="YYYY-MM-DD:YYYY-MM-DD")
     ap.add_argument("--target-roas")
     ap.add_argument("--target-cpa")
+    ap.add_argument("--conversions-snapshot", type=Path,
+                    help="conversions_by_action snapshot for exactly the current period (measurement check)")
+    ap.add_argument("--conversion-settings-snapshot", type=Path,
+                    help="conversion_actions snapshot: flags secondary actions counted in Conversions")
+    ap.add_argument("--share-snapshot", type=Path,
+                    help="campaign_share snapshot for exactly the current period (impression share)")
     return add_common_args(ap)
 
 
@@ -42,6 +50,8 @@ class ReportData:
     by_brand: dict[str, dict[str, Totals]]
     equivalence_reasons: list[str] = field(default_factory=list)
     parameters: dict = field(default_factory=dict)
+    measurement: Measurement | None = None          # conversions by action (optional input)
+    shares: dict[str, dict] | None = None           # impression share per campaign (optional input)
 
 
 def _by_period(records: list[dict], period: Period) -> list[dict]:
@@ -145,11 +155,20 @@ def build_review(args) -> Review:
         caveats=caveats, source_label=snap.path.name, customer_id=snap.customer_id, currency=currency,
     )
     actions = generate_actions(ctx)
+    conversions_snap = getattr(args, "conversions_snapshot", None)
+    settings_snap = getattr(args, "conversion_settings_snapshot", None)
+    if settings_snap and not conversions_snap:
+        raise StopAnalysis("--conversion-settings-snapshot needs --conversions-snapshot")
+    measurement = build_measurement(conversions_snap, settings_snap, ctx, log) if conversions_snap else None
+    if measurement:
+        actions = sorted(measurement_actions(measurement, ctx) + actions, key=lambda a: a.priority)
+    share_snap = getattr(args, "share_snapshot", None)
+    shares = load_shares(share_snap, snap.customer_id, current, log) if share_snap else None
     parameters = {k: str(v) for k, v in vars(args).items()}
     data = ReportData(snapshot=snap, grain=grain, rows=len(records),
                       by_type=_by_label(periods, lambda r: meta[r["campaign_id"]]["campaign_type"]),
                       by_brand=_by_label(periods, lambda r: meta[r["campaign_id"]]["brand_category"]),
-                      equivalence_reasons=reasons, parameters=parameters)
+                      equivalence_reasons=reasons, parameters=parameters, measurement=measurement, shares=shares)
     return Review(ctx=ctx, actions=actions, log=log, data=data, records=records, periods=periods)
 
 

@@ -16,6 +16,14 @@ def check_unique(records: list[dict], key: tuple[str, ...]) -> None:
         raise StopAnalysis(f"{len(dupes)} duplicate key(s) on grain {key}: {shown}")
 
 
+def check_same_scope(snap, customer_id: str, start: date | None, end: date | None, what: str) -> None:
+    """A supporting snapshot must describe the same account and, when dates are given, exactly the same period."""
+    if snap.customer_id != customer_id:
+        raise StopAnalysis(f"{what} is for customer {snap.customer_id}, not {customer_id}")
+    if start is not None and (snap.start, snap.end) != (start, end):
+        raise StopAnalysis(f"{what} covers {snap.start} to {snap.end}; it must cover exactly {start} to {end}")
+
+
 def check_single_currency(records: list[dict], expected: str | None) -> str:
     found = sorted({r["currency"] for r in records if r.get("currency")})
     if len(found) > 1:

@@ -13,5 +13,7 @@ QUERY_REQUIRED: dict[str, frozenset[str]] = {
     "negative_keywords": frozenset({"campaign_id", "keyword_text", "match_type"}),
     "shared_negative_keywords": frozenset({"shared_set_id", "keyword_text", "match_type"}),
     "campaign_shared_sets": frozenset({"campaign_id", "shared_set_id"}),
+    "campaign_share": frozenset({"campaign_id", "impression_share"}),
+    "conversions_by_action": frozenset({"conversion_action_resource", "conversions", "all_conversions"}),
     "product_daily": frozenset({"item_id", "campaign_id", "date", "cost", "clicks"}),
 }

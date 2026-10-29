@@ -89,6 +89,7 @@ def page(title: str, subtitle: str, synthetic: bool, body: str, footer: str, pay
 <p class="muted small">{footer}</p>
 </main>
 <script type="application/json" id="dash-data">{safe_json(payload or {})}</script>
+<script>{STACK_JS}</script>
 <script>{JS}</script>{f"""
 <script>{extra_js}</script>""" if extra_js else ""}
 </body></html>
@@ -136,10 +137,30 @@ th{color:var(--ink-2);font-weight:600}.num{text-align:right;font-variant-numeric
 .issues{list-style:none;margin:0;padding:0}.issue{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--grid)}
 .requests{list-style:none;margin:0;padding:0}.request{padding:12px 0;border-bottom:1px solid var(--grid)}.req-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:4px}.issue-title{font-weight:600}.issue-action{color:var(--ink-2)}
 details{margin-top:8px}summary{cursor:pointer;color:var(--ink-2);font-size:13px}
+@media (max-width:640px){table.stack thead{display:none}
+table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}
+table.stack tr{border-bottom:1px solid var(--grid);padding:6px 0}
+table.stack td{border:0;padding:3px 0;display:flex;justify-content:space-between;gap:12px;white-space:normal;text-align:right;min-width:0}
+table.stack td::before{content:attr(data-label);color:var(--ink-2);font-weight:600;text-align:left;flex:none}}
 .tooltip{position:fixed;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--border);
 border-radius:8px;padding:6px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.12);display:none;z-index:10}
 .tooltip strong{display:block;font-size:14px}
 ul.caveats{margin:0;padding-left:18px}
+"""
+
+# On narrow screens every table row becomes a small card: each cell is labelled with its column header (the
+# CSS above hides the header row). Kept separate from JS so a failure there cannot leave tables unreadable.
+STACK_JS = """
+(function(){
+  document.querySelectorAll('.table-wrap table').forEach(function(t){
+    var heads = Array.prototype.map.call(t.querySelectorAll('thead th'), function(th){ return th.textContent.trim(); });
+    if (!heads.length) return;
+    t.querySelectorAll('tbody tr').forEach(function(tr){
+      Array.prototype.forEach.call(tr.children, function(td, i){ if (heads[i]) td.setAttribute('data-label', heads[i]); });
+    });
+    t.classList.add('stack');
+  });
+})();
 """
 
 JS = """

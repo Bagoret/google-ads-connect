@@ -58,7 +58,7 @@ class WeeklyReviewE2E(unittest.TestCase):
         report = (self.run_ok("--previous", "2026-10-06:2026-10-12") / "report.md").read_text()
         titles = re.findall(r"^## (.+)$", report, re.M)
         self.assertEqual(titles, ["Sources & grain", "Validation log", "Comparison validity", "Account totals",
-                                  "By campaign type", "By brand category", "By campaign",
+                                  "By campaign type", "By brand category", "By campaign", "Measurement check",
                                   "Observed material changes", "Measurement caveats", "Prioritised actions",
                                   "Thresholds used", "What this report cannot tell you"])
 

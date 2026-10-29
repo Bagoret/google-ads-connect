@@ -39,7 +39,7 @@ ALLOWED = {
     "ai": {"core", "ui", "weekly"},
 }
 # feature -> its computation modules (no pages/reports/ui inside these)
-COMPUTE = {"weekly": {"analysis", "findings"}, "search_terms": {"analysis"}, "products": {"analysis"},
+COMPUTE = {"weekly": {"analysis", "findings", "measurement", "share"}, "search_terms": {"analysis"}, "products": {"analysis"},
            "changes": {"pipeline", "store"}, "onboarding": {"context", "first_connect"}, "ai": {"insights"}}
 
 

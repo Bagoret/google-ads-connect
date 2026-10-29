@@ -22,7 +22,7 @@ feature, the computation is kept apart from pages and reports. `tests/test_archi
 | **core** | Run log, IDs, files (+ repo root), CLI plumbing and exit codes, thresholds, metrics, period comparison, snapshot loading/normalising, validation | `gads/core/` | nothing else |
 | **ui** | Page kit: charts, tiles, the self-contained page shell | `gads/ui/viz.py` | core |
 | **connect** | Google's MCP server: read-only client, `.mcp.json` loading, snapshots, last active day (`activity`), macOS shim | `gads/connect/` | core |
-| **weekly** | `analysis` (weekly review) · `findings` (rules) · `report` (Markdown) · `dashboard` (page) | `gads/weekly/` | core, ui |
+| **weekly** | `analysis` (weekly review) · `findings` (rules) · `measurement` (conversions by action) · `share` (impression share) · `report` (Markdown) · `dashboard` (page) | `gads/weekly/` | core, ui |
 | **search_terms** | `analysis` (brand classes, weak terms, conflicts) · `report` (Markdown) · `page` (HTML) | `gads/search_terms/` | core, ui |
 | **products** | `analysis` (item performance, margin join) · `report` (Markdown) · `page` (HTML) | `gads/products/` | core, ui |
 | **changes** | `pipeline` (approval-gated requests, writes disabled) · `store` (saved requests) · `page` (status page) | `gads/changes/` | core, ui |
@@ -32,7 +32,7 @@ feature, the computation is kept apart from pages and reports. `tests/test_archi
 **The three rules** (a test fails if one is broken):
 1. Each package imports only what its row allows. Shared packages never import a feature.
 2. Features are independent of each other. The one exception is `ai`, which extends the weekly review.
-3. Inside a feature, the computation modules (`analysis`, `findings`, `pipeline`, `store`, `context`, `insights`)
+3. Inside a feature, the computation modules (`analysis`, `findings`, `measurement`, `share`, `pipeline`, `store`, `context`, `insights`)
    never import its pages, reports or the `ui` kit.
 
 ## Troubleshooting

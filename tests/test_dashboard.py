@@ -4,6 +4,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,6 +39,26 @@ class DashboardTest(unittest.TestCase):
                      "--now", "2027-03-01T09:00:00+00:00", "--out", str(self.out)])
         self.assertEqual(code, 0)
         self.assertNotIn("May still gain conversions", next(self.out.glob("*/index.html")).read_text(encoding="utf-8"))
+
+    def test_small_screens_stack_table_rows_into_labelled_cards(self):
+        html = self.build("--previous", "2026-10-06:2026-10-12")
+        self.assertIn("@media (max-width:640px){table.stack thead{display:none}", html)
+        self.assertIn("td.setAttribute('data-label', heads[i])", html)
+
+    def test_conversion_deltas_grey_when_too_few_conversions(self):
+        def tiles(html):
+            row = html.split('class="kpis"', 1)[1].split("</section>", 1)[0]
+            return {t.split("</div>", 1)[0]: t for t in row.split('<div class="tile-label">')[1:]}
+        normal = tiles(self.build("--previous", "2026-10-06:2026-10-12"))  # 12.81 and 17.5 conversions
+        self.assertNotIn("too few", normal["ROAS"])
+        shutil.rmtree(next(self.out.iterdir()))
+        strict = {"min_clicks_for_ratio": 30, "material_pct_change": 20, "min_spend_zero_conv": None,
+                  "min_conversions_for_ratio": 50}
+        with mock.patch("gads.weekly.analysis.load_thresholds", return_value=strict):
+            few = tiles(self.build("--previous", "2026-10-06:2026-10-12"))
+        self.assertIn("delta neutral", few["ROAS"])
+        self.assertIn("too few conversions to compare", few["ROAS"])
+        self.assertNotIn("too few", few["Cost"])
 
     def test_page_is_self_contained(self):
         html = self.build("--previous", "2026-10-06:2026-10-12")
