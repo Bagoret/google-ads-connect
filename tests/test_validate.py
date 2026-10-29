@@ -66,6 +66,15 @@ class PartialDataTest(unittest.TestCase):
         c = partial_data_caveats(date(2026, 10, 1), "Europe/Paris", None, datetime(2026, 10, 25, tzinfo=UTC))
         self.assertTrue(any("conversion delay unknown" in x for x in c))
 
+    def test_unknown_lag_says_how_old_the_period_is(self):
+        c = partial_data_caveats(date(2026, 9, 13), "Europe/Berlin", None, datetime(2026, 10, 29, tzinfo=UTC))
+        self.assertTrue(any("ended 46 day(s) ago" in x and "90-day" in x for x in c))
+
+    def test_no_delay_caveat_beyond_googles_maximum_window(self):
+        # conversion windows are at most 90 days, so older periods are final even with an unknown delay
+        self.assertEqual(partial_data_caveats(date(2026, 7, 1), "Europe/Berlin", None,
+                                              datetime(2026, 10, 29, tzinfo=UTC)), [])
+
     def test_known_lag_inside_window_caveated(self):
         c = partial_data_caveats(date(2026, 10, 20), "Europe/Paris", 7, datetime(2026, 10, 25, tzinfo=UTC))
         self.assertTrue(any("within the 7-day conversion delay" in x for x in c))
