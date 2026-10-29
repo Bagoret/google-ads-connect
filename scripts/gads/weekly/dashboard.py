@@ -167,6 +167,18 @@ def sparkline(values: list[Decimal], current_idx: set[int]) -> str:
 
 # ---------- page sections ----------
 
+CONVERSION_KPIS = {"conversions", "conversion_value", "roas", "cpa", "cvr"}
+
+
+def _too_few_conversions(ctx) -> bool:
+    """Below the min_conversions_for_ratio threshold in either period, conversion KPIs move on noise."""
+    limit = ctx.thresholds.get("min_conversions_for_ratio")
+    prev = ctx.account.get("previous")
+    if limit is None or prev is None:
+        return False
+    return any(t.conversions is None or t.conversions < Decimal(str(limit)) for t in (ctx.account["current"], prev))
+
+
 def _delta_html(cur, prev, direction: int, ctx) -> str:
     if not ctx.previous:
         return '<span class="delta muted">no previous period</span>'
@@ -183,16 +195,34 @@ def _delta_html(cur, prev, direction: int, ctx) -> str:
 def kpi_row(ctx) -> str:
     cur, prev = ctx.account["current"], ctx.account.get("previous")
     tiles = []
+    few = _too_few_conversions(ctx)
     for label, key, kind, direction in KPIS:
         v = _value(cur, key)
         pv = _value(prev, key) if prev else None
+        noisy = few and key in CONVERSION_KPIS
         tiles.append(
             f'<div class="tile"><div class="tile-label">{label}</div>'
             f'<div class="tile-value">{escape(fmt(v, kind, ctx.currency))}</div>'
-            f'{_delta_html(v, pv, direction, ctx)}'
+            f'{_delta_html(v, pv, 0 if noisy else direction, ctx)}'
+            + ('<div class="tile-prev">too few conversions to compare</div>' if noisy else "")
             + (f'<div class="tile-prev">prev. {escape(fmt(pv, kind, ctx.currency))}</div>' if prev else "")
             + "</div>")
-    return '<section class="kpis" aria-label="Key metrics">' + "".join(tiles) + "</section>"
+    note = (f'<p class="muted small">Grey arrows on conversion figures: fewer than '
+            f'{ctx.thresholds["min_conversions_for_ratio"]} conversions in a period, so the change is not meaningful '
+            '(min_conversions_for_ratio in config/review_thresholds.json).</p>' if few else "")
+    return '<section class="kpis" aria-label="Key metrics">' + "".join(tiles) + "</section>" + note
+
+
+def measurement_banner(review: Review) -> str:
+    """Above the KPIs: when Conversions include actions that are probably not purchases, the figures below are not
+    to be read at face value."""
+    flagged = [a for a in review.actions if a.entity_type == "conversion_action"]
+    if not flagged:
+        return ""
+    return ('<div class="banner"><strong>Conversions include actions that are probably not purchases.</strong> '
+            + " ".join(escape(a.finding) + "." for a in flagged)
+            + " Conversions, conversion value, CPA and ROAS below are unreliable for this period; see "
+              "Measurement check.</div>")
 
 
 def campaign_table(review: Review, sparks: dict[str, list[Decimal]], daily: list[dict]) -> str:
@@ -315,6 +345,7 @@ def render_dashboard(review: Review, generated_at: datetime, ai_html: str = "", 
     delay = [c for c in ctx.caveats if CONVERSION_DELAY in c]
     delay_note = (f'<p class="muted small">May still gain conversions: {escape(delay[0])}.</p>' if delay else "")
     body = f"""{comparability}
+{measurement_banner(review)}
 {kpi_row(ctx)}
 <div class="grid2">
 <section class="card"><h2>Daily cost</h2>{line_chart("chart-cost", daily, "cost", cur)}{daily_table(daily, cur)}</section>

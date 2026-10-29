@@ -139,6 +139,10 @@ class MeasurementShareTest(unittest.TestCase):
         self.assertEqual(code, 0)
         html = next(out.glob("*/index.html")).read_text(encoding="utf-8")
         self.assertIn('<td class="num">&lt; 10%</td>', html)
+        banner = next(b for b in html.split('class="banner"')[1:] if "probably" in b).split("</div>", 1)[0]
+        self.assertIn("probably not purchases", banner)
+        self.assertIn("SYNTH Page View", banner)
+        self.assertLess(html.index("probably not purchases"), html.index('class="kpis"'))
         for text in ("Measurement check", "SYNTH Page View", "secondary", "Impression share", "&lt; 10%",
                      "&gt; 90%", ">CTR<", ">Avg. CPC<", ">All conversions<"):
             self.assertIn(text, html)
